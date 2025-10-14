@@ -1,0 +1,107 @@
+services:
+  helium-frontend:
+    build:
+      context: ./web
+      no_cache: true
+      args:
+        GIT_TAG: ${GIT_TAG:?Error GIT_TAG is missing}
+    image: cert-edf/helium-fe
+    pull_policy: build
+    ports:
+      - 127.0.0.1:8122:80
+
+  helium-backend:
+    build: 
+      context: ./server/docker
+      no_cache: true
+    image: cert-edf/helium-be
+    pull_policy: build
+    ports:
+      - 127.0.0.1:8112:8080
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+    environment:
+      ROLE: server
+      FUSION_DEBUG: 0
+
+  helium-disk-usage:
+    build: 
+      context: ./server/docker
+      no_cache: true
+    image: cert-edf/helium-be
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+    environment:
+      ROLE: disk-usage
+      FUSION_DEBUG: 0
+
+  helium-synchronizer:
+    build: 
+      context: ./server/docker
+      no_cache: true
+    image: cert-edf/helium-be
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+      - /data/syncfs:/syncfs
+    environment:
+      ROLE: synchronizer
+      FUSION_DEBUG: 0
+
+  helium-analyzer-hayabusa:
+    build: 
+      context: ./analyzer/hayabusa
+      no_cache: true
+    image: cert-edf/helium-be-hayabusa
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+      - /data/helium/analyzer/hayabusa/rules:/analyzer/hayabusa/rules
+    environment:
+      ROLE: analyzer
+      FUSION_DEBUG: 0
+
+  helium-analyzer-plasma:
+    build: 
+      context: ./analyzer/plasma
+      no_cache: true
+    image: cert-edf/helium-be-plasma
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+    environment:
+      ROLE: analyzer
+      FUSION_DEBUG: 0
+
+  helium-analyzer-plaso:
+    build: 
+      context: ./analyzer/plaso
+      no_cache: true
+    image: cert-edf/helium-be-plaso
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+    environment:
+      ROLE: analyzer
+      FUSION_DEBUG: 0
+
+  helium-analyzer-yara:
+    build: 
+      context: ./analyzer/yara
+      no_cache: true
+    image: cert-edf/helium-be-yara
+    pull_policy: build
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+      - /data/helium/analyzer/yara/rules:/analyzer/yara/rules
+    environment:
+      ROLE: analyzer
+      FUSION_DEBUG: 0
