@@ -1,0 +1,32 @@
+@defer () {
+  <p-table [value]="cases">
+    <ng-template #caption>
+      <div class="flex items-center justify-between">
+        <span class="text-xl font-bold">Disk Usage</span>
+        <div
+          class="bg-gray-100 text-gray-800 text-sm font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-gray-500 dark:text-gray-100">
+          {{ total | fileSize }} {{ quota ? '/ ' + (quota | fileSize) : '' }}</div>
+      </div>
+    </ng-template>
+    <ng-template #header>
+      <tr>
+        <th pSortableColumn="case">Case <p-sortIcon field="case" /></th>
+        <th pSortableColumn="collectors">Collectors <p-sortIcon field="collectors" /></th>
+        <th pSortableColumn="collections">Collections <p-sortIcon field="collections" /></th>
+        <th pSortableColumn="analyses">Analyses <p-sortIcon field="analyses" /></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-case>
+      <tr>
+        <td class="flex items-center gap-2"><span class="text-xs text-slate-500">#{{ case.tsid || 'N/A'}}</span> {{
+          case.name }}</td>
+        <td>{{ case.du.collectors | fileSize }}</td>
+        <td>{{ case.du.collections | fileSize }}</td>
+        <td>{{ case.du.analyses | fileSize }}</td>
+      </tr>
+    </ng-template>
+    <ng-template #footer></ng-template>
+  </p-table>
+} @placeholder (minimum 0.4s) {
+  <p-skeleton height="14rem"></p-skeleton>
+}

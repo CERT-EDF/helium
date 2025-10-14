@@ -1,0 +1,43 @@
+<section>
+  <div pFocusTrap class="grid md:grid-cols-3 gap-4 mt-4" [formGroup]="collectionForm">
+    <p-floatlabel variant="in" class="w-full col-span-2">
+      <input id="hostname" formControlName="hostname" pInputText fluid />
+      <label for="hostname">Hostname</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full">
+      <p-select [options]="opsystems" inputId="opsystem" id="opsystem" formControlName="opsystem" [checkmark]="true" appendTo="body" fluid class="capitalize" />
+      <label for="opsystem">Op. System</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full">
+      <p-datepicker id="collected" formControlName="collected" fluid [iconDisplay]="'input'" appendTo="body"
+      [showTime]="true" [hourFormat]="'24'" [showIcon]="true" inputId="collected" />
+      <label for="collected">Collected</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full">
+      <input id="device" formControlName="device" pInputText fluid />
+      <label for="device">Device</label>
+    </p-floatlabel>
+    
+    <p-floatlabel variant="in" class="w-full">
+      <input id="version" formControlName="version" pInputText fluid />
+      <label for="version">Version</label>
+    </p-floatlabel>
+    
+    <p-floatlabel variant="in" class="w-full col-span-full">
+      <input id="description" formControlName="description" pInputText fluid />
+      <label for="description">Description</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full col-span-full">
+      <p-multiselect formControlName="tags" [options]="availableTags" [showToggleAll]="false" [filter]="false" fluid appendTo="body" />
+      <label for="tags">Tags</label>
+    </p-floatlabel>
+  </div>
+
+  <div class="mt-4 text-right">
+    <p-button (click)="closeDialog()" [disabled]="!collectionForm.valid" label="Update" />
+  </div>
+</section>

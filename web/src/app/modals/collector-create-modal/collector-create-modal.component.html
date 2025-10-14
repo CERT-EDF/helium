@@ -1,0 +1,58 @@
+<div class="mt-1">
+  @if (emptyProfiles) {
+    <p-message severity="error">There is no profile for {{ collectorForm.get('opsystem')?.value }}, it is likely not supported yet.</p-message>
+  }
+  
+  <div pFocusTrap class="grid grid-cols-2 gap-4 mt-4" [formGroup]="collectorForm">
+    <p-floatlabel variant="in" class="w-full">
+      <p-select [options]="opsystems" inputId="opsystem" [loading]="!opsystems.length" id="opsystem" formControlName="opsystem" [checkmark]="true" fluid class="capitalize" appendTo="body" />
+      <label for="opsystem">Op. System</label>
+    </p-floatlabel>
+    
+    <p-floatlabel variant="in" class="w-full">
+      <p-select [options]="archs" inputId="arch" id="arch" [loading]="!archs.length" formControlName="arch" [checkmark]="true" fluid class="capitalize" appendTo="body" />
+      <label for="arch">Architecture</label>
+    </p-floatlabel>
+    
+    <p-floatlabel variant="in" class="col-span-full w-full">
+      <p-select [options]="profiles" inputId="profile" id="profile" formControlName="profile" [checkmark]="true" fluid class="capitalize" appendTo="body" />
+      <label for="profile">Profile</label>
+    </p-floatlabel>
+    
+    <p-floatlabel variant="in" class="w-full col-span-full">
+      <input id="description" formControlName="description" pInputText fluid />
+      <label for="description">Description</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full">
+      <input id="device" formControlName="device" pInputText fluid />
+      <label for="device">Device</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="w-full">
+      <input id="vss_analysis_age" formControlName="vss_analysis_age" pInputText fluid />
+      <label for="vss_analysis_age">Max shadow copy age</label>
+    </p-floatlabel>
+    
+    <div class="col-span-full flex items-center justify-around my-2">
+      <div>
+        <p-checkbox formControlName="memdump" value="true" inputId="memdump" />
+        <label for="memdump" class="ml-2">Memory dump</label>
+      </div>
+      
+      <div>
+        <p-checkbox formControlName="dont_be_lazy" value="true" inputId="dont_be_lazy" />
+        <label for="dont_be_lazy" class="ml-2">No lazy</label>
+      </div>
+      
+      <div>
+        <p-checkbox formControlName="use_auto_accessor" value="true" inputId="use_auto_accessor" />
+        <label for="use_auto_accessor" class="ml-2">Auto accessor</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 text-right">
+    <p-button (click)="closeDialog()" [disabled]="!collectorForm.valid" label="Create" />
+  </div>
+</div>

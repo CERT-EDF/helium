@@ -1,0 +1,64 @@
+@use 'primeicons/primeicons.css';
+@plugin 'tailwindcss-primeui';
+@variant dark (&:where(.dark, .dark *));
+
+@layer tailwind, primeng;
+
+@layer tailwind {
+  @import 'tailwindcss';
+}
+
+* {
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #999;
+    border-radius: 20px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #fff;
+    border-radius: 20px;
+  }
+}
+
+html {
+  font-size: 15px;
+  font-family:
+    Roboto,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  line-height: normal;
+}
+
+.theme-text {
+  color: #0263b1 !important;
+}
+
+.theme-bg {
+  background-color: #0263b1 !important;
+}
+
+.spin-once {
+  animation: spin 1s normal forwards ease-in-out;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
