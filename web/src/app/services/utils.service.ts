@@ -59,7 +59,7 @@ export class UtilsService {
     const blob = new Blob([content], { type: 'text/plain' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `neon_${name}.${ext}`;
+    link.download = `helium_${name}.${ext}`;
     link.click();
     URL.revokeObjectURL(link.href);
   }
