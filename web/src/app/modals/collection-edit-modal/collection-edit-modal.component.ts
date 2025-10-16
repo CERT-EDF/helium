@@ -73,9 +73,7 @@ export class CollectionEditModalComponent {
             .pipe(take(1))
             .subscribe({
               next: (analyzerInfos) => {
-                this.availableTags = analyzerInfos.flatMap((info) => {
-                  return info.tags;
-                });
+                this.availableTags = [...new Set(analyzerInfos.flatMap((info) => info.tags))];
                 this.availableTags.sort((a, b) => (a > b ? 1 : -1));
 
                 const c = this.config.data;
