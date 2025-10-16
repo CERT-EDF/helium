@@ -1,5 +1,23 @@
 <section>
   <div pFocusTrap class="grid grid-cols-2 gap-4 p-4" [formGroup]="collectorSecretForm">
+    <p-floatlabel variant="in" class="group/item col-span-full w-full">
+      <textarea id="key_pem" rows="5" formControlName="key_pem" pTextarea fluid></textarea>
+      <label for="key_pem">Private key</label>
+      <div class="absolute top-0 right-1 invisible transition group-hover/item:visible group-hover/item:translate-y-1">
+        <p-button (click)="privateKeySelect.click()" icon="pi pi-file-import" severity="secondary" text />
+      </div>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="col-span-full w-full">
+      <input id="fingerprint" formControlName="fingerprint" pInputText fluid />
+      <label for="fingerprint">Fingerprint</label>
+    </p-floatlabel>
+
+    <p-floatlabel variant="in" class="col-span-full w-full">
+      <p-password id="secret" formControlName="secret" [feedback]="false" [toggleMask]="true" fluid />
+      <label for="secret">Secret</label>
+    </p-floatlabel>
+
     <p-floatlabel variant="in" class="w-full">
       <p-select [options]="opsystem" [loading]="!opsystem.length" id="opsystem" formControlName="opsystem" [checkmark]="true" fluid class="capitalize" appendTo="body" />
       <label for="opsystem">Op. System</label>
@@ -11,26 +29,8 @@
     </p-floatlabel>
 
     <p-floatlabel variant="in" class="col-span-full w-full">
-      <input id="fingerprint" formControlName="fingerprint" pInputText fluid />
-      <label for="fingerprint">Fingerprint</label>
-    </p-floatlabel>
-
-    <p-floatlabel variant="in" class="col-span-full w-full">
       <input id="description" formControlName="description" pInputText fluid />
       <label for="description">Description</label>
-    </p-floatlabel>
-
-    <p-floatlabel variant="in" class="col-span-full w-full">
-      <input id="secret" formControlName="secret" pInputText fluid />
-      <label for="secret">Secret</label>
-    </p-floatlabel>
-
-    <p-floatlabel variant="in" class="group/item col-span-full w-full">
-      <textarea id="key_pem" rows="5" formControlName="key_pem" pTextarea fluid></textarea>
-      <label for="key_pem">Private key</label>
-      <div class="absolute top-0 right-1 invisible transition group-hover/item:visible group-hover/item:translate-y-1">
-        <p-button (click)="privateKeySelect.click()" icon="pi pi-file-import" severity="secondary" text />
-      </div>
     </p-floatlabel>
   </div>
 
