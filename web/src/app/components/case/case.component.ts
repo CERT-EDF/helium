@@ -31,6 +31,7 @@ import { CollectionLogsModalComponent } from '../../modals/collection-logs-modal
 import { CaseCreateModalComponent } from '../../modals/case-create-modal/case-create-modal.component';
 import { take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { YesNoModalComponent } from '../../modals/yes-no-modal/yes-no-modal.component';
 
 @Component({
   selector: 'app-case',
@@ -490,63 +491,82 @@ export class CaseComponent {
   }
 
   uploadCollection(file: File) {
-    const formdata = new FormData();
-    formdata.append('file', file, file.name);
-
-    this.apiService.postCaseCollection(formdata, this.caseMeta!.guid).subscribe({
-      next: (event: HttpEvent<any>) => {
-        switch (event.type) {
-          case HttpEventType.UploadProgress:
-            if (event.total) {
-              let progress = Math.round((100 * event.loaded) / event.total);
-
-              if (progress == 100) this.uploadProgress = `[100%] Processing file`;
-              else this.uploadProgress = `[${progress}%] ${file.name}`;
-            }
-            break;
-
-          case HttpEventType.Response:
-            let collection = (event.body as APIResponse<Collection>)['data'];
-
-            this.uploadProgress = '';
-            const modal = this.dialogService.open(CollectionEditModalComponent, {
-              header: 'Edit Collection',
-              modal: true,
-              appendTo: 'body',
-              closable: true,
-              dismissableMask: true,
-              width: '30vw',
-              breakpoints: {
-                '960px': '90vw',
-              },
-              data: {
-                collection: collection,
-                fp_opsystem: Object.fromEntries(this.caseCollectors.map((c) => [c.fingerprint, c.opsystem])),
-                filename: file.name,
-              },
-            });
-
-            modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
-              if (pCollection) {
-                this.apiService
-                  .putCaseCollection(this.caseMeta!.guid, pCollection)
-                  .pipe(take(1))
-                  .subscribe({
-                    next: (collection) => {
-                      this.caseCollections.push(collection);
-                      this.sortCollections();
-                    },
-                  });
-              } else {
-                this.caseCollections.push(collection);
-              }
-            });
-            break;
-        }
+    const modal = this.dialogService.open(YesNoModalComponent, {
+      header: 'Trip',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+      breakpoints: {
+        '640px': '90vw',
       },
-      error: (error: HttpErrorResponse) => {
-        this.uploadProgress = '';
-        console.error(error);
+      data: {
+        msg: `Confirm with ${file.name} upload ?`,
+        warning: file.name.endsWith('.zip') ? '' : 'Helium supports zip and your file extension is mismatching',
+      },
+    });
+
+    modal.onClose.pipe(take(1)).subscribe({
+      next: (bool) => {
+        if (!bool) return;
+
+        const formdata = new FormData();
+        formdata.append('file', file, file.name);
+
+        this.apiService.postCaseCollection(formdata, this.caseMeta!.guid).subscribe({
+          next: (event: HttpEvent<any>) => {
+            switch (event.type) {
+              case HttpEventType.UploadProgress:
+                if (event.total) {
+                  let progress = Math.round((100 * event.loaded) / event.total);
+
+                  if (progress == 100) this.uploadProgress = `[100%] Processing file`;
+                  else this.uploadProgress = `[${progress}%] ${file.name}`;
+                }
+                break;
+
+              case HttpEventType.Response:
+                let collection = (event.body as APIResponse<Collection>)['data'];
+
+                this.uploadProgress = '';
+                const modal = this.dialogService.open(CollectionEditModalComponent, {
+                  header: 'Edit Collection',
+                  modal: true,
+                  appendTo: 'body',
+                  closable: true,
+                  dismissableMask: true,
+                  width: '30vw',
+                  breakpoints: {
+                    '960px': '90vw',
+                  },
+                  data: {
+                    collection: collection,
+                    filename: file.name,
+                  },
+                });
+
+                modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
+                  if (pCollection) {
+                    this.apiService
+                      .putCaseCollection(this.caseMeta!.guid, pCollection)
+                      .pipe(take(1))
+                      .subscribe({
+                        next: (collection) => {
+                          this.caseCollections.push(collection);
+                          this.sortCollections();
+                        },
+                      });
+                  } else {
+                    this.caseCollections.push(collection);
+                  }
+                });
+                break;
+            }
+          },
+          error: (error: HttpErrorResponse) => {
+            this.uploadProgress = '';
+            console.error(error);
+          },
+        });
       },
     });
   }
@@ -605,7 +625,6 @@ export class CaseComponent {
       },
       data: {
         collection: collection,
-        fp_opsystem: '',
         filename: '',
       },
     });
