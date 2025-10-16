@@ -11,6 +11,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FocusTrapModule } from 'primeng/focustrap';
+import { PasswordModule } from 'primeng/password';
 import { ApiService } from '../../services/api.service';
 import { take } from 'rxjs';
 
@@ -28,6 +29,7 @@ import { take } from 'rxjs';
     ReactiveFormsModule,
     TextareaModule,
     FocusTrapModule,
+    PasswordModule,
   ],
   standalone: true,
   templateUrl: './collector-import-modal.component.html',
