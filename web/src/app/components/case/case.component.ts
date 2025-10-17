@@ -175,7 +175,7 @@ export class CaseComponent {
       });
   }
 
-  isCollectionFingerprintOrphan(fp: string): boolean {
+  isCollectionFingerprintOrphaned(fp: string): boolean {
     return !this.caseCollectors.some((c) => c.fingerprint == fp);
   }
 
@@ -262,7 +262,7 @@ export class CaseComponent {
     }, 10);
   }
 
-  constructMenu(ev: any, analysisGuid: string, analyzerName: string) {
+  constructMenu(ev: any, analysisGuid: string, analyzerName: string, fp: string) {
     const status = this.analyses[analysisGuid][analyzerName]
       ? this.analyses[analysisGuid][analyzerName].status
       : undefined;
@@ -305,6 +305,7 @@ export class CaseComponent {
         items.push({
           label: 'Start',
           icon: 'pi pi-play',
+          disabled: this.isCollectionFingerprintOrphaned(fp),
           command: () => this.startAnalysis(analysisGuid, analyzerName),
         });
         break;
