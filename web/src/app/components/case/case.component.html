@@ -45,7 +45,7 @@
         }
       </div>
       <div class="flex flex-col justify-end items-end">
-      <p-button icon="pi pi-ellipsis-h" (click)="constructCaseMenu($event)" severity="secondary" text />
+        <p-button icon="pi pi-ellipsis-h" (click)="constructCaseMenu($event)" severity="secondary" text />
         <div
           class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-gray-500 dark:text-gray-100">
           {{ caseDiskUsage["_total"] || 0 | fileSize }}
@@ -192,6 +192,12 @@
       <div
         class="relative flex items-center justify-between rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-surface-700"
         (click)="openCollection(collection.guid)">
+        @if (isCollectionFingerprintOrphan(collection.fingerprint!)) {
+        <div class="absolute top-1 right-1">
+          <span
+            class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-red-500 dark:text-red-100">orphaned</span>
+        </div>
+        }
         <div class="flex gap-4 max-w-full">
           <div class="flex-shrink-0">
             <img class="h-12 w-12 rounded-full" src="favicon.png" />
@@ -201,7 +207,7 @@
             <span>{{ collection.hostname || collection.guid }}</span>
             <div class="mt-1 text-gray-500 text-xs">{{
               collection.created | date : "y-MM-dd | HH:mm"
-            }}</div>
+              }}</div>
             <div class="mt-1 line-clamp-1 truncate text-sm text-gray-500">
               {{ collection.description || "No description" }}
             </div>
@@ -271,10 +277,10 @@
         <p-tabpanel [value]="collection.guid">
           <div class="slide-y">
             <div class="flex items-center justify-end gap-2">
-              <p-button severity="danger" pTooltip="Remove cache" icon="pi pi-trash"
+              <p-button severity="danger" pTooltip="Remove cache" label="Cache" icon="pi pi-trash"
                 (click)="removeCache(collection.guid)" text />
-              <p-button severity="secondary" pTooltip="Download" icon="pi pi-download"
-                (click)="downloadCollection(collection.guid)" text />
+              <p-button severity="secondary" pTooltip="Download Pristine Collection" label="Pristine"
+                icon="pi pi-download" (click)="downloadCollection(collection.guid)" text />
               <p-button severity="secondary" pTooltip="Edit" icon="pi pi-pencil" (click)="editCollection(collection)"
                 label="Edit" text />
             </div>
@@ -291,6 +297,10 @@
                   </div>
 
                   @defer (when analyses[collection.guid]) {
+                  @if (isCollectionFingerprintOrphan(collection.fingerprint!)) {
+                  <p class="mt-4 font-light text-center text-red-500">Collection is <span
+                      class="font-semibold">orphaned</span>. No associated collector found.</p>
+                  }
                   @for (a of analyzerInfos; track a.name) {
                   <div class="flex justify-between gap-4 rounded p-4 hover:bg-gray-100 dark:hover:bg-surface-700">
                     <div class="flex min-w-0 gap-4 items-center">
@@ -303,7 +313,7 @@
                         </p>
                         <p class="truncate text-xs text-gray-500">
                           Last run @if (analyses[collection.guid] && analyses[collection.guid][a.name]) {
-                            {{ (analyses[collection.guid][a.name].created | date: 'y-MM-dd | HH:mm') || 'N/A' }}
+                          {{ (analyses[collection.guid][a.name].created | date: 'y-MM-dd | HH:mm') || 'N/A' }}
                           } @else {N/A}
                         </p>
                       </div>
@@ -340,7 +350,23 @@
                       </span>
                       } }
                       <p-button text severity="secondary" icon="pi pi-ellipsis-h"
+                        [disabled]="isCollectionFingerprintOrphan(collection.fingerprint!)"
                         (click)="constructMenu($event, collection.guid, a.name)" />
+                    </div>
+                  </div>
+                  } @empty {
+                  <div class="flex justify-center col-span-full">
+                    <div class="p-4 mx-auto max-w-screen-xl">
+                      <div class="max-w-screen-md">
+                        <div class="flex justify-center items-center">
+                          <h2 class="mb-0 text-xl tracking-wide font-semibold text-gray-900">
+                            No analyzers
+                          </h2>
+                        </div>
+                        <p class="mt-4 font-light text-center text-gray-500">
+                          Ensure your analyzers are up and running
+                        </p>
+                      </div>
                     </div>
                   </div>
                   } } @placeholder (minimum 0.4s) { @for (_ of [1,2,3]; track _)
