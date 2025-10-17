@@ -192,7 +192,7 @@
       <div
         class="relative flex items-center justify-between rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-surface-700"
         (click)="openCollection(collection.guid)">
-        @if (isCollectionFingerprintOrphan(collection.fingerprint!)) {
+        @if (isCollectionFingerprintOrphaned(collection.fingerprint!)) {
         <div class="absolute top-1 right-1">
           <span
             class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-red-500 dark:text-red-100">orphaned</span>
@@ -297,7 +297,7 @@
                   </div>
 
                   @defer (when analyses[collection.guid]) {
-                  @if (isCollectionFingerprintOrphan(collection.fingerprint!)) {
+                  @if (isCollectionFingerprintOrphaned(collection.fingerprint!)) {
                   <p class="mt-4 font-light text-center text-red-500">Collection is <span
                       class="font-semibold">orphaned</span>. No associated collector found.</p>
                   }
@@ -350,8 +350,7 @@
                       </span>
                       } }
                       <p-button text severity="secondary" icon="pi pi-ellipsis-h"
-                        [disabled]="isCollectionFingerprintOrphan(collection.fingerprint!)"
-                        (click)="constructMenu($event, collection.guid, a.name)" />
+                        (click)="constructMenu($event, collection.guid, a.name, collection.fingerprint!)" />
                     </div>
                   </div>
                   } @empty {
