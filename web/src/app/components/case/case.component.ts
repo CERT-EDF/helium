@@ -30,7 +30,6 @@ import { TabsModule } from 'primeng/tabs';
 import { CollectionLogsModalComponent } from '../../modals/collection-logs-modal/collection-logs-modal.component';
 import { CaseCreateModalComponent } from '../../modals/case-create-modal/case-create-modal.component';
 import { take } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { YesNoModalComponent } from '../../modals/yes-no-modal/yes-no-modal.component';
 
 @Component({
@@ -176,6 +175,10 @@ export class CaseComponent {
       });
   }
 
+  isCollectionOrphaned(collection: Collection): boolean {
+    return !this.caseCollectors.some((c) => c.fingerprint == collection.fingerprint);
+  }
+
   openEditCaseModal() {
     const modal = this.dialogService.open(CaseCreateModalComponent, {
       header: 'Update Case',
@@ -259,7 +262,7 @@ export class CaseComponent {
     }, 10);
   }
 
-  constructMenu(ev: any, analysisGuid: string, analyzerName: string) {
+  constructMenu(ev: any, analysisGuid: string, analyzerName: string, collection: Collection) {
     const status = this.analyses[analysisGuid][analyzerName]
       ? this.analyses[analysisGuid][analyzerName].status
       : undefined;
@@ -302,6 +305,7 @@ export class CaseComponent {
         items.push({
           label: 'Start',
           icon: 'pi pi-play',
+          disabled: this.isCollectionOrphaned(collection),
           command: () => this.startAnalysis(analysisGuid, analyzerName),
         });
         break;
@@ -492,7 +496,7 @@ export class CaseComponent {
 
   uploadCollection(file: File) {
     const modal = this.dialogService.open(YesNoModalComponent, {
-      header: 'Trip',
+      header: 'Upload Collection',
       modal: true,
       closable: true,
       dismissableMask: true,
@@ -652,13 +656,33 @@ export class CaseComponent {
   }
 
   removeCache(collectionGuid: string) {
-    this.apiService
-      .removeCache(this.caseMeta!.guid, collectionGuid)
-      .pipe(take(1))
-      .subscribe({
-        next: () => this.utilsService.toast('success', 'Success', 'Cache removed'),
-        error: () => this.utilsService.toast('danger', 'Error', 'Error removing cache'),
-      });
+    const modal = this.dialogService.open(YesNoModalComponent, {
+      header: 'Remove cache',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+      breakpoints: {
+        '640px': '90vw',
+      },
+      data: {
+        msg: 'You are about to remove cache to free space, including decrypted collections',
+        warning: 'Analyzers will need to decrypt collection again',
+      },
+    });
+
+    modal.onClose.pipe(take(1)).subscribe({
+      next: (bool) => {
+        if (!bool) return;
+
+        this.apiService
+          .removeCache(this.caseMeta!.guid, collectionGuid)
+          .pipe(take(1))
+          .subscribe({
+            next: () => this.utilsService.toast('success', 'Success', 'Cache removed'),
+            error: () => this.utilsService.toast('error', 'Error', 'Error removing cache'),
+          });
+      },
+    });
   }
 
   downloadCollector(collectorGuid: string): void {
