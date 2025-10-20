@@ -46,7 +46,7 @@ server {
     server_name helium.domain.lan;
 
     access_log  /var/log/nginx/helium.access.log;
-    error_log  /var/log/nginx/helium.error.log
+    error_log  /var/log/nginx/helium.error.log;
 
     proxy_http_version 1.1;
     proxy_set_header X-Real-IP $remote_addr;
@@ -54,7 +54,7 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
 
     location /api {
-      proxy_pass http://127.0.0.1:8012;
+      proxy_pass http://127.0.0.1:8112;
       client_max_body_size 4G;
       proxy_buffering off;
       proxy_set_header Upgrade $http_upgrade;
@@ -63,7 +63,7 @@ server {
     }
 
     location / {
-      proxy_pass http://127.0.0.1:8022;
+      proxy_pass http://127.0.0.1:8122;
     }
   }
 ```
