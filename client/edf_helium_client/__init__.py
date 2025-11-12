@@ -7,10 +7,9 @@ from uuid import UUID
 
 from aiohttp import FormData
 from edf_fusion.client import FusionClient
-from edf_fusion.concept import Identity, PendingDownloadKey
+from edf_fusion.concept import AnalyzerInfo, Identity, PendingDownloadKey
 from edf_helium_core.concept import (
     Analysis,
-    AnalyzerInfo,
     Collection,
     Collector,
     CollectorSecrets,
