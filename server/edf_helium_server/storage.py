@@ -70,11 +70,6 @@ class CollectionStorage(ConceptStorage):
     """Case Storage"""
 
     @cached_property
-    def extract_lock(self) -> Path:
-        """Collection lock file for extraction"""
-        return self.directory / 'data.d'
-
-    @cached_property
     def analysis_dir(self) -> Path:
         """Collection analysis directory"""
         return self.directory / 'analysis'

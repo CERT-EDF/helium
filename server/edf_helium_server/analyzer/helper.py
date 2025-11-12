@@ -5,8 +5,8 @@ from re import compile as regexp
 from uuid import UUID
 
 from edf_fusion.concept import AnalyzerInfo
-from edf_fusion.helper.flock import Flock
 from edf_fusion.helper.logging import get_logger
+from edf_fusion.helper.redis import Redis, create_redis_lock
 from edf_fusion.helper.zip import extract_zip
 from edf_helium_core.concept import Analysis, Case, Collection, Status
 from generaptor.concept import Outcome
@@ -164,13 +164,15 @@ async def _extract_collection(
 
 
 async def extract_collection(
-    storage: Storage, case_guid: UUID, collection_guid: UUID
+    redis: Redis, storage: Storage, case_guid: UUID, collection_guid: UUID
 ) -> bool:
     """Extract collection (with system-wide mutex)"""
     collection_storage = storage.collection_storage(case_guid, collection_guid)
     extracted_flag = collection_storage.data_dir / '__extracted__'
-    _LOGGER.info("waiting for extraction for collection %s", collection_guid)
-    async with Flock(filepath=collection_storage.extract_lock):
+    lock_name = f'collection-extract-lock-{collection_guid}'
+    lock = create_redis_lock(redis, lock_name)
+    _LOGGER.info("waiting for %s", lock_name)
+    async with lock:
         if extracted_flag.is_dir():
             _LOGGER.info(
                 "extraction skipped for collection %s", collection_guid
