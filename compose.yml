@@ -1,4 +1,15 @@
 services:
+
+  helium-redis:
+    image: redis:alpine
+    command: redis-server --save 300 1 --loglevel warning
+    networks:
+      - private
+    volumes:
+      - /data/helium/redis:/data
+    environment:
+      SKIP_DROP_PRIVS: 1
+
   helium-frontend:
     build:
       context: ./web
@@ -18,9 +29,14 @@ services:
     pull_policy: build
     ports:
       - 127.0.0.1:8112:8080
+    networks:
+      - default
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
+    depends_on:
+      - helium-redis
     environment:
       ROLE: server
       FUSION_DEBUG: 0
@@ -31,9 +47,13 @@ services:
       no_cache: true
     image: cert-edf/helium-be
     pull_policy: build
+    networks:
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
+    depends_on:
+      - helium-redis
     environment:
       ROLE: disk-usage
       FUSION_DEBUG: 0
@@ -58,10 +78,14 @@ services:
       no_cache: true
     image: cert-edf/helium-be-hayabusa
     pull_policy: build
+    networks:
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
       - /data/helium/analyzer/hayabusa/rules:/analyzer/hayabusa/rules
+    depends_on:
+      - helium-redis
     environment:
       ROLE: analyzer
       FUSION_DEBUG: 0
@@ -72,9 +96,13 @@ services:
       no_cache: true
     image: cert-edf/helium-be-plasma
     pull_policy: build
+    networks:
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
+    depends_on:
+      - helium-redis
     environment:
       ROLE: analyzer
       FUSION_DEBUG: 0
@@ -85,9 +113,13 @@ services:
       no_cache: true
     image: cert-edf/helium-be-plaso
     pull_policy: build
+    networks:
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
+    depends_on:
+      - helium-redis
     environment:
       ROLE: analyzer
       FUSION_DEBUG: 0
@@ -98,10 +130,17 @@ services:
       no_cache: true
     image: cert-edf/helium-be-yara
     pull_policy: build
+    networks:
+      - private
     volumes:
       - /data/helium/conf:/conf
       - /data/helium/data:/data
       - /data/helium/analyzer/yara/rules:/analyzer/yara/rules
+    depends_on:
+      - helium-redis
     environment:
       ROLE: analyzer
       FUSION_DEBUG: 0
+
+networks:
+  private:
