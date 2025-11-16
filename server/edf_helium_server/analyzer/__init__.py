@@ -18,7 +18,7 @@ from signal import SIGINT, SIGTERM
 
 from edf_fusion.concept import AnalyzerInfo
 from edf_fusion.helper.logging import get_logger
-from edf_fusion.helper.redis import Redis, create_redis, close_redis
+from edf_fusion.helper.redis import Redis, close_redis, create_redis
 from edf_fusion.server.config import (
     FusionAnalyzerConfig,
     FusionAnalyzerConfigType,

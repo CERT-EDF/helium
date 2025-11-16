@@ -5,17 +5,20 @@ from edf_fusion.helper.logging import get_logger
 
 from .case import (
     api_analyses_get,
+    api_analysis_delete,
     api_analysis_download_get,
     api_analysis_get,
     api_analysis_log_get,
     api_analysis_post,
     api_analysis_put,
     api_collection_cache_delete,
+    api_collection_delete,
     api_collection_download_get,
     api_collection_get,
     api_collection_post,
     api_collection_put,
     api_collections_get,
+    api_collector_delete,
     api_collector_download_get,
     api_collector_get,
     api_collector_import_post,
@@ -24,6 +27,7 @@ from .case import (
     api_collectors_get,
     attach_case_impl,
     create_case_impl,
+    delete_case_impl,
     enumerate_cases_impl,
     retrieve_case_impl,
     update_case_impl,
@@ -54,6 +58,10 @@ def setup_api(webapp: Application):
                 '/api/case/{case_guid}/collector/{collector_guid}',
                 api_collector_get,
             ),
+            delete(
+                '/api/case/{case_guid}/collector/{collector_guid}',
+                api_collector_delete,
+            ),
             get(
                 '/api/case/{case_guid}/collector/{collector_guid}/secrets',
                 api_collector_secrets_get,
@@ -64,6 +72,10 @@ def setup_api(webapp: Application):
             ),
             get('/api/case/{case_guid}/collections', api_collections_get),
             post('/api/case/{case_guid}/collection', api_collection_post),
+            delete(
+                '/api/case/{case_guid}/collection/{collection_guid}',
+                api_collection_delete,
+            ),
             get(
                 '/api/case/{case_guid}/collection/{collection_guid}',
                 api_collection_get,
@@ -91,6 +103,10 @@ def setup_api(webapp: Application):
             get(
                 '/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}',
                 api_analysis_get,
+            ),
+            delete(
+                '/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}',
+                api_analysis_delete,
             ),
             get(
                 '/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}/log',

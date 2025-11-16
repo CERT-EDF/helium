@@ -14,6 +14,7 @@ from edf_fusion.helper.streaming import stream_from_file
 from edf_fusion.server.case import (
     AttachContext,
     CreateContext,
+    DeleteContext,
     EnumerateContext,
     RetrieveContext,
     UpdateContext,
@@ -58,6 +59,16 @@ async def update_case_impl(ctx: UpdateContext) -> Case | None:
     return case
 
 
+async def delete_case_impl(ctx: DeleteContext) -> bool:
+    """Delete case"""
+    storage = get_fusion_storage(ctx.request)
+    fusion_evt_api = get_fusion_evt_api(ctx.request)
+    case = await storage.retrieve_case(ctx.case_guid)
+    deleted = await storage.delete_case(ctx.case_guid)
+    await fusion_evt_api.notify(category='delete_case', case=case)
+    return deleted
+
+
 async def retrieve_case_impl(ctx: RetrieveContext) -> Case | None:
     """Retrieve case"""
     storage = get_fusion_storage(ctx.request)
@@ -90,6 +101,40 @@ async def api_analyses_get(request: Request):
     )
 
 
+async def api_analysis_delete(request: Request):
+    """Delete analysis"""
+    case_guid = get_guid(request, 'case_guid')
+    collection_guid = get_guid(request, 'collection_guid')
+    fusion_evt_api = get_fusion_evt_api(request)
+    analyzer = request.match_info['analyzer']
+    _, storage = await prologue(
+        request,
+        'delete_analysis',
+        context={
+            'case_guid': case_guid,
+            'collection_guid': collection_guid,
+            'analyzer': analyzer,
+            'case_open_check': True,
+            'is_delete_op': True,
+        },
+    )
+    case = await storage.retrieve_case(case_guid)
+    analysis = await storage.retrieve_analysis(
+        case_guid, collection_guid, analyzer
+    )
+    deleted = await storage.delete_analysis(
+        case_guid, collection_guid, analyzer
+    )
+    await fusion_evt_api.notify(
+        category='delete_analysis',
+        case=case,
+        ext={'analysis': analysis.to_dict()},
+    )
+    if not deleted:
+        return json_response(status=400, message="Not deleted")
+    return json_response(data={})
+
+
 async def api_analysis_log_get(request: Request) -> StreamResponse:
     """Retrieve analysis log"""
     case_guid = get_guid(request, 'case_guid')
@@ -97,7 +142,7 @@ async def api_analysis_log_get(request: Request) -> StreamResponse:
     analyzer = request.match_info['analyzer']
     _, storage = await prologue(
         request,
-        'analysis_log',
+        'download_analysis_log',
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
@@ -125,7 +170,7 @@ async def api_analysis_download_get(request: Request):
     analyzer = request.match_info['analyzer']
     _, storage = await prologue(
         request,
-        'analysis_download',
+        'download_analysis_data',
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
@@ -231,11 +276,40 @@ async def api_collection_cache_delete(request: Request):
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'case_open_check': True,
+            # is_delete_op is not expected to be set here
         },
     )
     deleted = await storage.delete_collection_cache(case_guid, collection_guid)
     if not deleted:
         return json_response(status=404, message="Collection cache is empty")
+    return json_response(data={})
+
+
+async def api_collection_delete(request: Request):
+    """Delete collection"""
+    case_guid = get_guid(request, 'case_guid')
+    collection_guid = get_guid(request, 'collection_guid')
+    fusion_evt_api = get_fusion_evt_api(request)
+    _, storage = await prologue(
+        request,
+        'delete_collection',
+        context={
+            'case_guid': case_guid,
+            'collection_guid': collection_guid,
+            'case_open_check': True,
+            'is_delete_op': True,
+        },
+    )
+    case = await storage.retrieve_case(case_guid)
+    collection = await storage.retrieve_collection(case_guid, collection_guid)
+    deleted = await storage.delete_collection(case_guid, collection_guid)
+    await fusion_evt_api.notify(
+        category='delete_collection',
+        case=case,
+        ext={'collection': collection.to_dict()},
+    )
+    if not deleted:
+        return json_response(status=400, message="Not deleted")
     return json_response(data={})
 
 
@@ -355,6 +429,34 @@ async def api_collections_get(request: Request):
     )
 
 
+async def api_collector_delete(request: Request):
+    """Delete collector"""
+    case_guid = get_guid(request, 'case_guid')
+    collector_guid = get_guid(request, 'collector_guid')
+    fusion_evt_api = get_fusion_evt_api(request)
+    _, storage = await prologue(
+        request,
+        'delete_collector',
+        context={
+            'case_guid': case_guid,
+            'collector_guid': collector_guid,
+            'case_open_check': True,
+            'is_delete_op': True,
+        },
+    )
+    case = await storage.retrieve_case(case_guid)
+    collector = await storage.retrieve_collector(case_guid, collector_guid)
+    deleted = await storage.delete_collector(case_guid, collector_guid)
+    await fusion_evt_api.notify(
+        category='delete_collector',
+        case=case,
+        ext={'collector': collector.to_dict()},
+    )
+    if not deleted:
+        return json_response(status=400, message="Not deleted")
+    return json_response(data={})
+
+
 async def api_collector_download_get(request: Request):
     """Retrieve collector pending download key"""
     case_guid = get_guid(request, 'case_guid')
@@ -362,7 +464,7 @@ async def api_collector_download_get(request: Request):
     fusion_dl_api = get_fusion_dl_api(request)
     _, storage = await prologue(
         request,
-        'collector_download',
+        'download_collector',
         context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
     executable = await storage.retrieve_collector_executable(
