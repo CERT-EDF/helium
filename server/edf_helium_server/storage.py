@@ -241,6 +241,11 @@ class Storage(FusionStorage):
         case.to_filepath(metadata)
         return case
 
+    async def delete_case(self, case_guid: UUID) -> bool:
+        case_storage = self.case_storage(case_guid)
+        case_storage.remove()
+        return True
+
     async def retrieve_case(self, case_guid: UUID) -> Case | None:
         case_storage = self.case_storage(case_guid)
         metadata = case_storage.metadata
@@ -288,6 +293,14 @@ class Storage(FusionStorage):
         collector_secrets.to_filepath(collector_storage.secrets)
         collector.to_filepath(collector_storage.metadata)
         return collector
+
+    async def delete_collector(
+        self, case_guid: UUID, collector_guid: UUID
+    ) -> bool:
+        """Delete collector"""
+        collector_storage = self.collector_storage(case_guid, collector_guid)
+        collector_storage.remove()
+        return True
 
     async def import_collector(self, case_guid: UUID, dct) -> Collector | None:
         """Import case collector"""
@@ -390,6 +403,16 @@ class Storage(FusionStorage):
         collection.to_filepath(metadata)
         return collection
 
+    async def delete_collection(
+        self, case_guid: UUID, collection_guid: UUID
+    ) -> bool:
+        """Delete collection"""
+        collection_storage = self.collection_storage(
+            case_guid, collection_guid
+        )
+        collection_storage.remove()
+        return True
+
     async def retrieve_collection(
         self, case_guid: UUID, collection_guid: UUID
     ) -> Collection | None:
@@ -474,6 +497,16 @@ class Storage(FusionStorage):
         analysis.update(dct)
         analysis.to_filepath(metadata)
         return analysis
+
+    async def delete_analysis(
+        self, case_guid: UUID, collection_guid: UUID, analyzer: str
+    ) -> bool:
+        """Delete analysis"""
+        analysis_storage = self.analysis_storage(
+            case_guid, collection_guid, analyzer
+        )
+        analysis_storage.remove()
+        return True
 
     async def retrieve_analysis(
         self, case_guid: UUID, collection_guid: UUID, analyzer: str

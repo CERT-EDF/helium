@@ -57,6 +57,13 @@ class HeliumClient:
             endpoint, concept_cls=PendingDownloadKey
         )
 
+    async def delete_collector(
+        self, case_guid: UUID, collector_guid: UUID
+    ) -> bool:
+        """Delete collector"""
+        endpoint = f'/api/case/{case_guid}/collector/{collector_guid}'
+        return await self.fusion_client.delete(endpoint)
+
     async def retrieve_collector(
         self, case_guid: UUID, collector_guid: UUID
     ) -> Collector | None:
@@ -116,6 +123,13 @@ class HeliumClient:
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/cache'
         return await self.fusion_client.delete(endpoint)
 
+    async def delete_collection(
+        self, case_guid: UUID, collection_guid: UUID
+    ) -> bool:
+        """Delete collection"""
+        endpoint = f'/api/case/{case_guid}/collection/{collection_guid}'
+        return await self.fusion_client.delete(endpoint)
+
     async def retrieve_collection(
         self, case_guid: UUID, collection_guid: UUID
     ) -> Collection | None:
@@ -159,6 +173,13 @@ class HeliumClient:
         return await self.fusion_client.get(
             endpoint, concept_cls=PendingDownloadKey
         )
+
+    async def delete_analysis(
+        self, case_guid: UUID, collection_guid: UUID, analyzer: str
+    ) -> bool:
+        """Delete analysis"""
+        endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}'
+        return await self.fusion_client.delete(endpoint)
 
     async def retrieve_analysis(
         self, case_guid: UUID, collection_guid: UUID, analyzer: str
