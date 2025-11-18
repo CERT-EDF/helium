@@ -12,7 +12,6 @@ from edf_helium_core.concept import Analysis, Case, Collection, Status
 from generaptor.concept import Outcome
 
 from ..storage import CollectionStorage, Storage
-from .task import AnalyzerTask
 
 _LOGGER = get_logger('server.analyzer.helper', root='helium')
 _NAME_PATTERN = regexp(r'([a-z]+_)*[a-z]+')
@@ -28,18 +27,6 @@ def check_analyzer_info(info: AnalyzerInfo) -> bool:
         _LOGGER.critical("invalid analyzer version: '%s'", info.version)
         return False
     return True
-
-
-async def set_analysis_status(
-    storage: Storage, analyzer_task: AnalyzerTask, status: Status
-):
-    """Set analysis status"""
-    await storage.update_analysis(
-        analyzer_task.case.guid,
-        analyzer_task.collection.guid,
-        analyzer_task.analysis.analyzer,
-        {'status': status.value},
-    )
 
 
 async def find_analyses(
