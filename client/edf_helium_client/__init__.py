@@ -8,6 +8,7 @@ from uuid import UUID
 from aiohttp import FormData
 from edf_fusion.client import FusionClient
 from edf_fusion.concept import AnalyzerInfo, Identity, PendingDownloadKey
+from edf_fusion.helper.logging import get_logger
 from edf_helium_core.concept import (
     Analysis,
     Collection,
@@ -20,6 +21,8 @@ from edf_helium_core.concept import (
 )
 from generaptor.concept import Architecture, OperatingSystem
 
+_LOGGER = get_logger('client', root='carbon')
+
 
 @dataclass(kw_only=True)
 class HeliumClient:
@@ -31,6 +34,7 @@ class HeliumClient:
         self, case_guid: UUID, collector: Collector
     ) -> Collector:
         """Create collector"""
+        _LOGGER.info("creating collector in case %s", case_guid)
         endpoint = f'/api/case/{case_guid}/collector'
         return await self.fusion_client.post(endpoint, collector, Collector)
 
@@ -41,6 +45,7 @@ class HeliumClient:
         secrets: CollectorSecrets,
     ) -> Collector:
         """Import collector information for collection processing"""
+        _LOGGER.info("importing collector in case %s", case_guid)
         endpoint = f'/api/case/{case_guid}/collector/import'
         dct = collector.to_dict()
         dct.update(secrets.to_dict())
@@ -52,6 +57,9 @@ class HeliumClient:
         self, case_guid: UUID, collector_guid: UUID
     ) -> PendingDownloadKey | None:
         """Download collector"""
+        _LOGGER.info(
+            "downloading collector %s in case %s", collector_guid, case_guid
+        )
         endpoint = f'/api/case/{case_guid}/collector/{collector_guid}/download'
         return await self.fusion_client.get(
             endpoint, concept_cls=PendingDownloadKey
@@ -61,6 +69,9 @@ class HeliumClient:
         self, case_guid: UUID, collector_guid: UUID
     ) -> bool:
         """Delete collector"""
+        _LOGGER.info(
+            "deleting collector %s in case %s", collector_guid, case_guid
+        )
         endpoint = f'/api/case/{case_guid}/collector/{collector_guid}'
         return await self.fusion_client.delete(endpoint)
 
@@ -75,6 +86,11 @@ class HeliumClient:
         self, case_guid: UUID, collector_guid: UUID
     ) -> CollectorSecrets:
         """Retrieve collector secrets"""
+        _LOGGER.info(
+            "retrieving secrets for collector %s in case %s",
+            collector_guid,
+            case_guid,
+        )
         endpoint = f'/api/case/{case_guid}/collector/{collector_guid}/secrets'
         return await self.fusion_client.get(
             endpoint, concept_cls=CollectorSecrets
@@ -91,6 +107,7 @@ class HeliumClient:
         self, case_guid: UUID, filepath: Path
     ) -> Collection | None:
         """Create collection"""
+        _LOGGER.info("uploading collection %s in case %s", filepath, case_guid)
         data = FormData()
         data.add_field('file', filepath.open('rb'), filename=filepath.name)
         endpoint = f'/api/case/{case_guid}/collection'
@@ -102,6 +119,9 @@ class HeliumClient:
         self, case_guid: UUID, collection: Collection
     ) -> Collection | None:
         """Update collection"""
+        _LOGGER.info(
+            "updating collection %s in case %s", collection.guid, case_guid
+        )
         endpoint = f'/api/case/{case_guid}/collection/{collection.guid}'
         return await self.fusion_client.put(endpoint, collection, Collection)
 
@@ -109,6 +129,9 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID
     ) -> PendingDownloadKey | None:
         """Download collection"""
+        _LOGGER.info(
+            "downloading collection %s in case %s", collection_guid, case_guid
+        )
         endpoint = (
             f'/api/case/{case_guid}/collection/{collection_guid}/download'
         )
@@ -120,6 +143,11 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID
     ) -> bool:
         """Delete collection cache"""
+        _LOGGER.info(
+            "deleting cache for collection %s in case %s",
+            collection_guid,
+            case_guid,
+        )
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/cache'
         return await self.fusion_client.delete(endpoint)
 
@@ -127,6 +155,9 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID
     ) -> bool:
         """Delete collection"""
+        _LOGGER.info(
+            "deleting collection %s in case %s", collection_guid, case_guid
+        )
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}'
         return await self.fusion_client.delete(endpoint)
 
@@ -148,6 +179,12 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID, analysis: Analysis
     ) -> Analysis | None:
         """Create analysis"""
+        _LOGGER.info(
+            "creating analysis %s for collection %s in case %s",
+            analysis.analyzer,
+            collection_guid,
+            case_guid,
+        )
         endpoint = (
             f'/api/case/{case_guid}/collection/{collection_guid}/analysis'
         )
@@ -159,6 +196,12 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID, analysis: Analysis
     ) -> Analysis | None:
         """Update analysis"""
+        _LOGGER.info(
+            "updating analysis %s for collection %s in case %s",
+            analysis.analyzer,
+            collection_guid,
+            case_guid,
+        )
         analyzer = analysis.analyzer
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}'
         return await self.fusion_client.put(
@@ -169,6 +212,12 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID, analyzer: str
     ) -> PendingDownloadKey | None:
         """Download analysis"""
+        _LOGGER.info(
+            "downloading analysis %s for collection %s in case %s",
+            analyzer,
+            collection_guid,
+            case_guid,
+        )
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}/download'
         return await self.fusion_client.get(
             endpoint, concept_cls=PendingDownloadKey
@@ -178,6 +227,12 @@ class HeliumClient:
         self, case_guid: UUID, collection_guid: UUID, analyzer: str
     ) -> bool:
         """Delete analysis"""
+        _LOGGER.info(
+            "deleting analysis %s for collection %s in case %s",
+            analyzer,
+            collection_guid,
+            case_guid,
+        )
         endpoint = f'/api/case/{case_guid}/collection/{collection_guid}/analysis/{analyzer}'
         return await self.fusion_client.delete(endpoint)
 

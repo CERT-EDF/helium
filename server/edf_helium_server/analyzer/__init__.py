@@ -92,7 +92,8 @@ class Analyzer:
     ):
         """Set analysis status"""
         await self.storage.update_analysis(
-            a_task.primary_digest,
+            a_task.case.guid,
+            a_task.collection.guid,
             a_task.analysis.analyzer,
             {'status': status.value},
         )
@@ -195,7 +196,7 @@ class Analyzer:
                 redis=self._redis,
                 session=session,
                 api_ssl=self._config.event_api.api_ssl,
-                webhooks=[self.config.webhook],
+                webhooks=[self._config.event_api.webhook],
             )
             await self._register_analyzer()
             await self._recover_incomplete_analyses()
