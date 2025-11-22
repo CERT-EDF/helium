@@ -22,7 +22,7 @@ services:
       - 127.0.0.1:8122:80
 
   helium-backend:
-    build: 
+    build:
       context: ./server/docker
       no_cache: true
     image: cert-edf/helium-be
@@ -42,7 +42,7 @@ services:
       FUSION_DEBUG: 0
 
   helium-disk-usage:
-    build: 
+    build:
       context: ./server/docker
       no_cache: true
     image: cert-edf/helium-be
@@ -59,7 +59,7 @@ services:
       FUSION_DEBUG: 0
 
   helium-synchronizer:
-    build: 
+    build:
       context: ./server/docker
       no_cache: true
     image: cert-edf/helium-be
@@ -72,8 +72,25 @@ services:
       ROLE: synchronizer
       FUSION_DEBUG: 0
 
+  helium-analyzer-extractor:
+    build:
+      context: ./analyzer/extractor
+      no_cache: true
+    image: cert-edf/helium-be-extractor
+    pull_policy: build
+    networks:
+      - private
+    volumes:
+      - /data/helium/conf:/conf
+      - /data/helium/data:/data
+    depends_on:
+      - helium-redis
+    environment:
+      ROLE: analyzer
+      FUSION_DEBUG: 0
+
   helium-analyzer-hayabusa:
-    build: 
+    build:
       context: ./analyzer/hayabusa
       no_cache: true
     image: cert-edf/helium-be-hayabusa
@@ -91,7 +108,7 @@ services:
       FUSION_DEBUG: 0
 
   helium-analyzer-plasma:
-    build: 
+    build:
       context: ./analyzer/plasma
       no_cache: true
     image: cert-edf/helium-be-plasma
@@ -108,7 +125,7 @@ services:
       FUSION_DEBUG: 0
 
   helium-analyzer-plaso:
-    build: 
+    build:
       context: ./analyzer/plaso
       no_cache: true
     image: cert-edf/helium-be-plaso
@@ -125,7 +142,7 @@ services:
       FUSION_DEBUG: 0
 
   helium-analyzer-yara:
-    build: 
+    build:
       context: ./analyzer/yara
       no_cache: true
     image: cert-edf/helium-be-yara
