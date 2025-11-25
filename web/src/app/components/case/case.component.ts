@@ -117,7 +117,7 @@ export class CaseComponent {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private utilsService: UtilsService,
-    private dialogService: DialogService
+    private dialogService: DialogService,
   ) {
     this.caseForm = this.fb.group({
       tsid: '',
@@ -213,13 +213,13 @@ export class CaseComponent {
 
   sortCollectors() {
     this.caseCollectors.sort(
-      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime()
+      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime(),
     );
   }
 
   sortCollections() {
     this.caseCollections.sort(
-      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime()
+      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime(),
     );
   }
 
@@ -651,12 +651,12 @@ export class CaseComponent {
               this.displayedCollections.splice(
                 this.displayedCollections.findIndex((c) => c.guid == collection.guid),
                 1,
-                collection
+                collection,
               );
               this.caseCollections.splice(
                 this.caseCollections.findIndex((c) => c.guid == collection.guid),
                 1,
-                collection
+                collection,
               );
             },
           });
@@ -758,7 +758,7 @@ export class CaseComponent {
           next: () =>
             this.caseCollectors.splice(
               this.caseCollectors.findIndex((c) => c.guid == collector.guid),
-              1
+              1,
             ),
           error: () => this.utilsService.toast('error', 'Error', 'An error occured, collector not deleted'),
         });
@@ -786,7 +786,7 @@ export class CaseComponent {
           next: () =>
             this.displayedCollections.splice(
               this.displayedCollections.findIndex((c) => c.guid == collection.guid),
-              1
+              1,
             ),
           error: () => this.utilsService.toast('error', 'Error', 'An error occured, collection not deleted'),
         });
