@@ -31,6 +31,7 @@ import { CollectionLogsModalComponent } from '../../modals/collection-logs-modal
 import { CaseCreateModalComponent } from '../../modals/case-create-modal/case-create-modal.component';
 import { take } from 'rxjs';
 import { YesNoModalComponent } from '../../modals/yes-no-modal/yes-no-modal.component';
+import { DeleteConfirmModalComponent } from '../../modals/delete-confirm-modal/delete-confirm-modal.component';
 
 @Component({
   selector: 'app-case',
@@ -116,7 +117,7 @@ export class CaseComponent {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private utilsService: UtilsService,
-    private dialogService: DialogService,
+    private dialogService: DialogService
   ) {
     this.caseForm = this.fb.group({
       tsid: '',
@@ -212,13 +213,13 @@ export class CaseComponent {
 
   sortCollectors() {
     this.caseCollectors.sort(
-      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime(),
+      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime()
     );
   }
 
   sortCollections() {
     this.caseCollections.sort(
-      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime(),
+      (a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime()
     );
   }
 
@@ -366,27 +367,6 @@ export class CaseComponent {
 
   constructCaseMenu(ev: any) {
     if (!this.caseMeta) return;
-    const items: MenuItem[] = [
-      {
-        label: 'Copy GUID',
-        icon: 'pi pi-tag',
-        command: () => {
-          try {
-            navigator.clipboard.writeText(this.caseMeta!.guid);
-          } catch {
-            console.error('Clipboard not available');
-            this.utilsService.toast('error', 'Error', 'Clipboard not available');
-          }
-        },
-      },
-      {
-        label: 'Edit',
-        icon: 'pi pi-pencil',
-        disabled: !!this.caseMeta.closed,
-        command: () => this.openEditCaseModal(),
-      },
-    ];
-
     const closeOrReopenItem = this.caseMeta.closed
       ? {
           label: 'Reopen',
@@ -413,7 +393,35 @@ export class CaseComponent {
               }),
         };
 
-    this.caseMenuItems = [...items, closeOrReopenItem];
+    const items: MenuItem[] = [
+      {
+        label: 'Copy GUID',
+        icon: 'pi pi-tag',
+        command: () => {
+          try {
+            navigator.clipboard.writeText(this.caseMeta!.guid);
+          } catch {
+            console.error('Clipboard not available');
+            this.utilsService.toast('error', 'Error', 'Clipboard not available');
+          }
+        },
+      },
+      {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        disabled: !!this.caseMeta.closed,
+        command: () => this.openEditCaseModal(),
+      },
+      closeOrReopenItem,
+      {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        iconClass: 'text-red-500!',
+        command: () => this.deleteCase(),
+      },
+    ];
+
+    this.caseMenuItems = [...items];
     this.caseMenu.toggle(ev);
   }
 
@@ -643,12 +651,12 @@ export class CaseComponent {
               this.displayedCollections.splice(
                 this.displayedCollections.findIndex((c) => c.guid == collection.guid),
                 1,
-                collection,
+                collection
               );
               this.caseCollections.splice(
                 this.caseCollections.findIndex((c) => c.guid == collection.guid),
                 1,
-                collection,
+                collection
               );
             },
           });
@@ -701,5 +709,85 @@ export class CaseComponent {
       .subscribe({
         error: (error) => console.error(error),
       });
+  }
+
+  deleteCase() {
+    if (!this.caseMeta || !this.caseMeta.name) return;
+    const modal = this.dialogService.open(DeleteConfirmModalComponent, {
+      header: 'Confirm to delete',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+      breakpoints: {
+        '640px': '90vw',
+      },
+      data: this.caseMeta.name,
+    });
+
+    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
+      if (!confirmed) return;
+      if (!confirmed) return;
+      this.apiService
+        .deleteCase(this.caseMeta!.guid)
+        .pipe(take(1))
+        .subscribe({
+          next: () => this.utilsService.navigateHomeWithError(),
+          error: () => this.utilsService.toast('error', 'Error', 'An error occured, case not deleted'),
+        });
+    });
+  }
+
+  deleteCollector(collector: Collector) {
+    const modal = this.dialogService.open(DeleteConfirmModalComponent, {
+      header: 'Confirm to delete',
+      modal: true,
+      closable: true,
+      focusOnShow: false,
+      dismissableMask: true,
+      breakpoints: { '640px': '90vw' },
+      data: collector.fingerprint || collector.guid,
+    });
+
+    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
+      if (!confirmed) return;
+      this.apiService
+        .deleteCollector(this.caseMeta!.guid, collector.guid)
+        .pipe(take(1))
+        .subscribe({
+          next: () =>
+            this.caseCollectors.splice(
+              this.caseCollectors.findIndex((c) => c.guid == collector.guid),
+              1
+            ),
+          error: () => this.utilsService.toast('error', 'Error', 'An error occured, collector not deleted'),
+        });
+    });
+  }
+
+  deleteCollection(collection: Collection) {
+    const modal = this.dialogService.open(DeleteConfirmModalComponent, {
+      header: 'Confirm to delete',
+      modal: true,
+      closable: true,
+      focusOnShow: false,
+      dismissableMask: true,
+      breakpoints: { '640px': '90vw' },
+      data: collection.hostname || collection.guid,
+    });
+
+    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
+      if (!confirmed) return;
+      this.apiService
+        .deleteCollection(this.caseMeta!.guid, collection.guid)
+        .pipe(take(1))
+        .subscribe({
+          next: () =>
+            this.displayedCollections.splice(
+              this.displayedCollections.findIndex((c) => c.guid == collection.guid),
+              1
+            ),
+          error: () => this.utilsService.toast('error', 'Error', 'An error occured, collection not deleted'),
+        });
+    });
   }
 }

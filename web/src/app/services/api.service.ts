@@ -281,4 +281,16 @@ export class ApiService {
     if (new Date().getTime() - this.diskUsageData.ts > 60000 * 5) return observable;
     return of(this.diskUsageData.du);
   }
+
+  deleteCase(caseGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}`);
+  }
+
+  deleteCollector(caseGuid: string, collectorGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collectors/${collectorGuid}`);
+  }
+
+  deleteCollection(caseGuid: string, collectionGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collections/${collectionGuid}`);
+  }
 }
