@@ -712,6 +712,7 @@ export class CaseComponent {
   }
 
   deleteCase() {
+    const confirm_text = this.caseMeta?.name;
     if (!this.caseMeta || !this.caseMeta.name) return;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
@@ -721,12 +722,11 @@ export class CaseComponent {
       breakpoints: {
         '640px': '90vw',
       },
-      data: this.caseMeta.name,
+      data: confirm_text,
     });
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed) return;
-      if (!confirmed) return;
+      if (!confirmed || confirm_text != confirmed) return;
       this.apiService
         .deleteCase(this.caseMeta!.guid)
         .pipe(take(1))
@@ -738,6 +738,7 @@ export class CaseComponent {
   }
 
   deleteCollector(collector: Collector) {
+    const confirm_text = collector.fingerprint || collector.guid;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
@@ -745,11 +746,11 @@ export class CaseComponent {
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
-      data: collector.fingerprint || collector.guid,
+      data: confirm_text,
     });
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed) return;
+      if (!confirmed || confirm_text != confirmed) return;
       this.apiService
         .deleteCollector(this.caseMeta!.guid, collector.guid)
         .pipe(take(1))
@@ -765,6 +766,7 @@ export class CaseComponent {
   }
 
   deleteCollection(collection: Collection) {
+    const confirm_text = collection.hostname || collection.guid;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
@@ -772,11 +774,11 @@ export class CaseComponent {
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
-      data: collection.hostname || collection.guid,
+      data: confirm_text,
     });
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed) return;
+      if (!confirmed || confirm_text != confirmed) return;
       this.apiService
         .deleteCollection(this.caseMeta!.guid, collection.guid)
         .pipe(take(1))
