@@ -17,7 +17,9 @@ RUN apt update && \
     apt install --yes build-essential libmagic-dev libsystemd-dev pkg-config python3 python3-dev python3-venv && \
     python3 -m venv /venv && \
     /venv/bin/python -m pip install uv && \
-    /venv/bin/uv pip install --python /venv/bin/python edf-helium-server edf-plasma-cli
+    /venv/bin/uv pip install --python /venv/bin/python edf-helium-server \
+                                                       edf-plasma-dissectors[binary,linux,windows,pcap,memdump] \
+                                                       edf-plasma-cli
 # =============================================================================
 # PRODUCTION IMAGE
 # =============================================================================
