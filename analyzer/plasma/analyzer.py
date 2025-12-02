@@ -19,11 +19,17 @@ class PlasmaAnalyzerConfig(FusionAnalyzerConfig):
     """Plasma Analyzer Config"""
 
     program: Path | None = None
+    parallel_surgeons: int = 1
+    parallel_dissectors: int = 1
 
     @classmethod
     def from_dict(cls, dct):
         config = super().from_dict(dct)
         config.program = Path(dct['program'])
+        config.parallel_surgeons = max(1, int(dct.get('parallel_surgeons', 1)))
+        config.parallel_dissectors = max(
+            1, int(dct.get('parallel_dissectors', 1))
+        )
         return config
 
 
@@ -48,7 +54,7 @@ async def _plasma_process_impl(
     if a_task.collection.opsystem:
         tags.add(a_task.collection.opsystem.value)
     if not tags:
-        raise AnalyzerError("failed to find applicable plasma tags!")
+        raise AnalyzerError("plasma cannot process collection without tags!")
     tags = ','.join(sorted(tags))
     argv = [
         str(config.program),
@@ -60,6 +66,10 @@ async def _plasma_process_impl(
         a_task.collection.hostname,
         '--filter',
         f'tags:{tags}',
+        '--parallel-surgeons',
+        str(config.parallel_surgeons),
+        '--parallel-dissectors',
+        str(config.parallel_dissectors),
         '.',
         str(analysis_storage.data_dir.resolve()),
     ]
