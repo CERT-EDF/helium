@@ -93,3 +93,8 @@ analyzer:
     compiled: false
     rule_files:
       - /analyzer/yara/rules/index.yar
+  # ----------------------------------------------------------------------------
+  # extractor configuration
+  extractor:
+    enabled: false
+    workers: 1
