@@ -14,7 +14,7 @@ _LOGGER = get_logger('analyzer.extractor', root='helium')
 
 async def _extractor_process_impl(
     info: AnalyzerInfo,
-    config: ExtractorAnalyzerConfig,
+    config: FusionAnalyzerConfig,
     storage: Storage,
     a_task: AnalyzerTask,
 ) -> bool:
