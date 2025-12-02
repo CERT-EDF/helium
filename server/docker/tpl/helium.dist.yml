@@ -78,6 +78,8 @@ analyzer:
     enabled: false
     workers: 1
     program: /analyzer/plasma/plasma
+    parallel_surgeons: 1
+    parallel_dissectors: 1
   # ----------------------------------------------------------------------------
   # plaso configuration
   plaso:
