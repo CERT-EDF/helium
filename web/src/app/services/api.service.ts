@@ -1,5 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, distinctUntilChanged, map, of, shareReplay, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  distinctUntilChanged,
+  map,
+  of,
+  shareReplay,
+  tap,
+  retry,
+  throwError,
+  timer,
+} from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { UtilsService } from './utils.service';
 import { AuthParams } from '../types/OIDC';
@@ -140,6 +152,10 @@ export class ApiService {
       .pipe(map((resp) => resp.data));
   }
 
+  deleteCase(caseGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}`);
+  }
+
   postCaseCollector(collector: Collector, caseGuid: string): Observable<Collector> {
     return this.http
       .post<APIResponse<Collector>>(`${this.apiBaseUrl}/case/${caseGuid}/collector`, collector)
@@ -174,6 +190,10 @@ export class ApiService {
       );
   }
 
+  deleteCollector(caseGuid: string, collectorGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}`);
+  }
+
   getCaseCollections(caseGuid: string): Observable<Collection[]> {
     return this.http
       .get<APIResponse<Collection[]>>(`${this.apiBaseUrl}/case/${caseGuid}/collections`)
@@ -206,6 +226,10 @@ export class ApiService {
     return this.http
       .put<APIResponse<Collection>>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collection.guid}`, collection)
       .pipe(map((c) => c.data));
+  }
+
+  deleteCollection(caseGuid: string, collectionGuid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}`);
   }
 
   getAnalyzerInfos(): Observable<AnalyzerInfo[]> {
@@ -243,6 +267,12 @@ export class ApiService {
       .pipe(map((c) => c.data));
   }
 
+  deleteCollectionAnalysis(caseGuid: string, collectionGuid: string, analyzerName: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/analysis/${analyzerName}`,
+    );
+  }
+
   downloadCollection(caseGuid: string, collectionGuid: string): Observable<any> {
     return this.http
       .get<APIResponse<any>>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/download`)
@@ -269,6 +299,31 @@ export class ApiService {
       );
   }
 
+  getCaseEventsSSE(guid: string): Observable<MessageEvent> {
+    return new Observable<MessageEvent>((obs) => {
+      const eventSource = new EventSource(`${this.apiBaseUrl}/events/case/${guid}`);
+      eventSource.onmessage = (event: MessageEvent) => obs.next(event);
+      eventSource.onerror = (error) => {
+        this.utils.toast('error', 'EventSource disconnected', 'EventSource disconnected, reconnecting...');
+        obs.error(error);
+        eventSource.close();
+      };
+      eventSource.onopen = () => console.log('EventSource connected');
+      return () => eventSource.close();
+    }).pipe(
+      retry({ count: 5, delay: 1000, resetOnSuccess: true }),
+      catchError((error) => {
+        this.utils.toast(
+          'error',
+          'EventSource disconnected',
+          'Roses are red, Violets are blue, EventSource is disconnected, there is nothing I can do for you',
+          -1,
+        );
+        return throwError(() => error);
+      }),
+    );
+  }
+
   getDiskUsage(): Observable<APIDiskUsage> {
     const observable = this.http.get<APIResponse<APIDiskUsage>>(`${this.apiBaseUrl}/disk_usage`).pipe(
       map((c) => c.data),
@@ -280,17 +335,5 @@ export class ApiService {
     if (!this.diskUsageData) return observable;
     if (new Date().getTime() - this.diskUsageData.ts > 60000 * 5) return observable;
     return of(this.diskUsageData.du);
-  }
-
-  deleteCase(caseGuid: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}`);
-  }
-
-  deleteCollector(caseGuid: string, collectorGuid: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collectors/${collectorGuid}`);
-  }
-
-  deleteCollection(caseGuid: string, collectionGuid: string): Observable<any> {
-    return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collections/${collectionGuid}`);
   }
 }
