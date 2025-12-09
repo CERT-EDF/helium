@@ -42,6 +42,7 @@ def main():
     analyzer = Analyzer(
         info=AnalyzerInfo(
             name='extractor',
+            tags=set(),
             version='0.1.0',
         ),
         config_cls=FusionAnalyzerConfig,

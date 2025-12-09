@@ -44,11 +44,21 @@
         </div>
         }
       </div>
-      <div class="flex flex-col justify-end items-end">
-        <p-button icon="pi pi-ellipsis-h" (click)="constructCaseMenu($event)" severity="secondary" text />
-        <div
-          class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-gray-500 dark:text-gray-100">
-          {{ caseDiskUsage["_total"] || 0 | fileSize }}
+
+      <div class="flex gap-2 items-center">
+        <div class="flex -space-x-4 max-w-96">
+          @for (user of activeUsers; track user) {
+          <div [pTooltip]="user"
+            class="flex items-center capitalize justify-center bg-gray-400 w-10 h-10 text-xs font-medium text-white border-2 border-white rounded-full">
+            <span class="w-[1.2ch] overflow-hidden">{{ user }}</span></div>
+          }
+        </div>
+        <div class="flex flex-col justify-end items-end">
+          <p-button icon="pi pi-ellipsis-h" (click)="constructCaseMenu($event)" severity="secondary" text />
+          <div
+            class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-gray-500 dark:text-gray-100">
+            {{ caseDiskUsage["_total"] || 0 | fileSize }}
+          </div>
         </div>
       </div>
     </div>
@@ -143,7 +153,7 @@
         </div>
 
         <div class="invisible flex gap-1 cursor-pointer absolute right-3 bottom-3 group-hover/item:visible">
-          <p-button (click)="deleteCollector(collector)" icon="pi pi-trash" severity="danger" text />
+          <p-button (click)="deleteCollector(collector)" icon="pi pi-trash" pTooltip="Delete" severity="danger" text />
           <p-button (click)="getCollectorSecrets(collector)" pTooltip="Secrets" severity="secondary" icon="pi pi-key"
             text />
           @if (collector.profile) {
@@ -278,8 +288,9 @@
         <p-tabpanel [value]="collection.guid">
           <div class="slide-y">
             <div class="flex items-center justify-end gap-2">
-              <p-button (click)="deleteCollection(collection)" icon="pi pi-trash" severity="danger" text />
-              <p-button severity="danger" pTooltip="Remove cache" label="Cache" icon="pi pi-delete-left"
+              <p-button (click)="deleteCollection(collection)" icon="pi pi-trash" pTooltip="Delete Collection"
+                severity="danger" text />
+              <p-button severity="danger" pTooltip="Remove cache" label="Cache" icon="pi pi-eraser"
                 (click)="removeCache(collection.guid)" text />
               <p-button severity="secondary" pTooltip="Download Pristine Collection" label="Pristine"
                 icon="pi pi-download" (click)="downloadCollection(collection.guid)" text />
@@ -303,56 +314,34 @@
                   <p class="mt-4 font-light text-center text-red-500">Collection is <span
                       class="font-semibold">orphaned</span>. No associated collector found.</p>
                   }
-                  @for (a of analyzerInfos; track a.name) {
+
+                  @for (analyzer of analyzerInfos; track analyzer.name) {
                   <div class="flex justify-between gap-4 rounded p-4 hover:bg-gray-100 dark:hover:bg-surface-700">
                     <div class="flex min-w-0 gap-4 items-center">
                       <img class="size-12 rounded-full bg-gray-50" src="/favicon.png" alt="" />
                       <div class="flex flex-col gap-2">
                         <p class="text-sm font-semibold text-gray-900 dark:text-slate-300">
-                          {{ a.name }}
-                          <span class="ml-2 text-red-400 text-xs">@if(!tagIntersect(a.name, collection.tags)) {<span>No
+                          {{ analyzer.name }}
+                          <span class="ml-2 text-red-400 text-xs">@if(!tagIntersect(analyzer.name, collection.tags)) {<span>No
                               tag intersection</span>}</span>
                         </p>
                         <p class="truncate text-xs text-gray-500">
-                          Last run @if (analyses[collection.guid] && analyses[collection.guid][a.name]) {
-                          {{ (analyses[collection.guid][a.name].created | date: 'y-MM-dd | HH:mm') || 'N/A' }}
-                          } @else {N/A}
+                          Last run {{ (analyses[collection.guid]?.[analyzer.name]?.created | date: 'y-MM-dd | HH:mm') || 'N/A' }}
                         </p>
                       </div>
                     </div>
 
                     <div class="flex items-center justify-end gap-2">
-                      @if (analyses[collection.guid][a.name]) { @if
-                      (['pending','queued'].includes(analyses[collection.guid][a.name].status))
-                      {
-                      <span
-                        class="inline-flex items-center bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-gray-900 dark:text-gray-300">
-                        <span class="w-2 h-2 me-1 bg-gray-500 rounded-full"></span>
-                        Pending
-                      </span>
-                      } @else if
-                      (['extracting','processing'].includes(analyses[collection.guid][a.name].status))
-                      {
-                      <span
-                        class="inline-flex items-center bg-blue-100 text-blue-800 text-xs capitalize font-medium px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">
-                        <span class="w-2 h-2 me-1 bg-blue-500 rounded-full"></span>
-                        {{ analyses[collection.guid][a.name].status }}
-                      </span>
-                      } @else if (analyses[collection.guid][a.name].status == 'success') {
-                      <span
-                        class="inline-flex items-center bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300">
-                        <span class="w-2 h-2 me-1 bg-green-500 rounded-full"></span>
-                        Success
-                      </span>
-                      } @else {
-                      <span
-                        class="inline-flex items-center bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">
-                        <span class="w-2 h-2 me-1 bg-red-500 rounded-full"></span>
-                        Failure
-                      </span>
-                      } }
+                      @if (analyses[collection.guid]?.[analyzer.name]?.status) {
+                        <span
+                        [class]="analyses[collection.guid]?.[analyzer.name]?.status == 'pending' ? 'bg-gray-100 text-gray-800' : analyses[collection.guid]?.[analyzer.name]?.status == 'queued' ? 'bg-gray-100 text-gray-800' : analyses[collection.guid]?.[analyzer.name]?.status == 'extracting' ? 'bg-blue-100 text-blue-800' : analyses[collection.guid]?.[analyzer.name]?.status == 'processing' ? 'bg-blue-100 text-blue-800' : analyses[collection.guid]?.[analyzer.name]?.status == 'success' ? 'bg-green-100 text-green-800' : analyses[collection.guid]?.[analyzer.name]?.status == 'failure' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'"
+                          class="inline-flex capitalize items-center text-xs font-medium px-2.5 py-0.5 rounded-full">
+                          <span class="w-2 h-2 me-1 rounded-full" [class]="analyses[collection.guid]?.[analyzer.name]?.status == 'pending' ? 'bg-gray-500' : analyses[collection.guid]?.[analyzer.name]?.status == 'queued' ? 'bg-gray-500' : analyses[collection.guid]?.[analyzer.name]?.status == 'extracting' ? 'bg-blue-500' : analyses[collection.guid]?.[analyzer.name]?.status == 'processing' ? 'bg-blue-500' : analyses[collection.guid]?.[analyzer.name]?.status == 'success' ? 'bg-green-500' : analyses[collection.guid]?.[analyzer.name]?.status == 'failure' ? 'bg-red-500' : 'bg-gray-500'"></span>
+                          {{ analyses[collection.guid]?.[analyzer.name]?.status }}
+                        </span>
+                      }
                       <p-button text severity="secondary" icon="pi pi-ellipsis-h"
-                        (click)="constructMenu($event, collection.guid, a.name, collection)" />
+                        (click)="constructMenu($event, collection.guid, analyzer.name, collection)" />
                     </div>
                   </div>
                   } @empty {
