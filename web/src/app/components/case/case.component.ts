@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { FloatLabelModule } from 'primeng/floatlabel';
@@ -9,7 +9,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { FocusTrapModule } from 'primeng/focustrap';
 import { ApiService } from '../../services/api.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Collection, CollectionAnalysis, Collector, CollectorSecret, Profile } from '../../types/collect';
+import { Collection, CollectionAnalysis, Collector } from '../../types/collect';
 import { FileSizePipe } from '../../shared/filesize.pipe';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -18,18 +18,18 @@ import { CollectorImportModalComponent } from '../../modals/collector-import-mod
 import { Menu, MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
-import { CaseMetadata } from '../../types/case';
+import { CaseMetadata, FusionEvent } from '../../types/case';
 import { UtilsService } from '../../services/utils.service';
 import { HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
 import { APIResponse, AnalyzerInfo } from '../../types/API';
-import { DatePipe } from '@angular/common';
+import { DatePipe, KeyValuePipe } from '@angular/common';
 import { MessageModule } from 'primeng/message';
 import { CollectionEditModalComponent } from '../../modals/collection-edit-modal/collection-edit-modal.component';
 import { CollectorSecretsModalComponent } from '../../modals/collector-secrets-modal/collector-secrets-modal.component';
 import { TabsModule } from 'primeng/tabs';
 import { CollectionLogsModalComponent } from '../../modals/collection-logs-modal/collection-logs-modal.component';
 import { CaseCreateModalComponent } from '../../modals/case-create-modal/case-create-modal.component';
-import { take } from 'rxjs';
+import { Subscription, take } from 'rxjs';
 import { YesNoModalComponent } from '../../modals/yes-no-modal/yes-no-modal.component';
 import { DeleteConfirmModalComponent } from '../../modals/delete-confirm-modal/delete-confirm-modal.component';
 
@@ -54,11 +54,12 @@ import { DeleteConfirmModalComponent } from '../../modals/delete-confirm-modal/d
     MenuModule,
     DatePipe,
     ButtonModule,
+    KeyValuePipe,
   ],
   templateUrl: './case.component.html',
   styleUrl: './case.component.scss',
 })
-export class CaseComponent {
+export class CaseComponent implements OnDestroy {
   @ViewChild('collectionTabContent') collectionTabContentRef?: ElementRef;
   @ViewChild('actionsMenu') actionsMenu!: Menu;
   @ViewChild('caseMenu') caseMenu!: Menu;
@@ -103,17 +104,20 @@ export class CaseComponent {
   caseDiskUsage: { [c: string]: number } = {};
   caseCollectors: Collector[] = [];
   caseCollections: Collection[] = [];
-  uploadProgress = '';
   selectedCollectionTabID: string = '';
   displayedCollections: Collection[] = [];
+  uploadProgress = '';
   analyses: { [guid: string]: { [analyzerName: string]: CollectionAnalysis } } = {};
   analyzerInfos: AnalyzerInfo[] = [];
+  eventSource!: Subscription;
+  activeUsers: string[] = [];
 
   actionsMenuItems: MenuItem[] = [];
   caseMenuItems: MenuItem[] = [];
 
   constructor(
     private apiService: ApiService,
+    private cdr: ChangeDetectorRef,
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private utilsService: UtilsService,
@@ -131,6 +135,11 @@ export class CaseComponent {
       .subscribe({
         next: (caseMeta) => {
           this.caseMeta = caseMeta;
+
+          this.eventSource = this.apiService.getCaseEventsSSE(this.caseMeta!.guid).subscribe({
+            next: (event) => this.handleSSEEvent(event),
+            error: (error) => console.error('SSE error:', error),
+          });
 
           this.apiService
             .getCaseCollectors(this.caseMeta.guid)
@@ -176,6 +185,98 @@ export class CaseComponent {
       });
   }
 
+  ngOnDestroy(): void {
+    if (this.eventSource) this.eventSource.unsubscribe();
+  }
+
+  handleSSEEvent(messageEvent: MessageEvent): void {
+    if (!messageEvent.data) return;
+    const event: FusionEvent = JSON.parse(messageEvent.data);
+    const ext = event.ext;
+    switch (event.category) {
+      case 'subscribers':
+        this.activeUsers = ext.usernames;
+        break;
+      case 'subscribe':
+        if (!this.activeUsers.includes(ext.username)) this.activeUsers.push(ext.username);
+        break;
+      case 'unsubscribe':
+        this.activeUsers = this.activeUsers.filter((u) => u !== ext.username);
+        break;
+      case 'import_collector':
+        this.caseCollectors = [...this.caseCollectors, ext];
+        this.sortCollectors();
+        break;
+      case 'create_collector':
+        this.caseCollectors = [...this.caseCollectors, ext];
+        this.sortCollectors();
+        break;
+      case 'delete_collector':
+        this.caseCollectors = this.caseCollectors.filter((c) => c.guid != ext.guid);
+        this.utilsService.toast('info', 'A collector was deleted', 'A collector was deleted');
+        break;
+      case 'create_collection':
+        this.caseCollections = [...this.caseCollections, ext];
+        this.sortCollections();
+        break;
+      case 'update_collection': {
+        this.caseCollections = [...this.caseCollections.filter((c) => c.guid != ext.guid), ext];
+        const index_update_collection = this.displayedCollections.findIndex((c) => c.guid == ext.guid);
+        if (index_update_collection > -1)
+          this.displayedCollections = [...this.displayedCollections.filter((c) => c.guid != ext.guid), ext];
+        this.sortCollections();
+        break;
+      }
+      case 'delete_collection':
+        const collectionId = ext.guid;
+        this.caseCollections = this.caseCollections.filter((c) => c.guid != collectionId);
+        const index = this.displayedCollections.findIndex((c) => c.guid == collectionId);
+        if (index > -1) {
+          this.displayedCollections = this.displayedCollections.filter((c) => c.guid != collectionId);
+          const selectedTabID = this.selectedCollectionTabID;
+          this.selectedCollectionTabID = '';
+          setTimeout(() => {
+            this.selectedCollectionTabID =
+              selectedTabID == collectionId ? this.displayedCollections[0]?.guid || '' : selectedTabID;
+            this.collectionTabContentRef?.nativeElement.scrollIntoView({
+              block: 'start',
+              behavior: 'smooth',
+            });
+          }, 10);
+        }
+        break;
+      case 'update_case':
+        this.caseMeta = event.case;
+        break;
+      case 'delete_case':
+        this.utilsService.toast('info', 'Case deleted', 'This case was deleted');
+        this.utilsService.navigateHomeWithError();
+        break;
+      case 'create_analysis': {
+        const collection = ext.collection;
+        const analysis = ext.analysis;
+        if (this.analyses.hasOwnProperty(collection.guid)) this.analyses[collection.guid][analysis.analyzer] = analysis;
+        break;
+      }
+      case 'delete_analysis':
+        Object.entries(this.analyses).forEach(([collectionGuid, analyses]) => {
+          Object.entries(analyses).forEach(([analyzerName, analysis]) => {
+            if (analysis.guid == ext.guid) delete this.analyses[collectionGuid][analyzerName];
+          });
+        });
+        break;
+      default: {
+        if (!event.category.startsWith('analysis_')) break;
+        const collection = ext.collection;
+        const analysis = ext.analysis;
+        const status = event.category.split('analysis_')[1];
+        if (this.analyses.hasOwnProperty(collection.guid))
+          this.analyses[collection.guid][analysis.analyzer] = { ...analysis, status };
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
   isCollectionOrphaned(collection: Collection): boolean {
     return !this.caseCollectors.some((c) => c.fingerprint == collection.fingerprint);
   }
@@ -201,14 +302,7 @@ export class CaseComponent {
   }
 
   putCase(data: Partial<CaseMetadata>) {
-    this.apiService
-      .putCase(this.caseMeta!.guid, data)
-      .pipe(take(1))
-      .subscribe({
-        next: (meta) => {
-          this.caseMeta = meta;
-        },
-      });
+    this.apiService.putCase(this.caseMeta!.guid, data).pipe(take(1)).subscribe();
   }
 
   sortCollectors() {
@@ -281,15 +375,23 @@ export class CaseComponent {
       command: () => this.restartAnalysis(analysisGuid, analyzerName),
     };
 
+    const DELETE = {
+      label: 'Delete',
+      icon: 'pi pi-trash',
+      command: () => this.deleteAnalysis(analysisGuid, analyzerName),
+    };
+
     switch (status) {
       case 'failure':
         items.push(RESTART);
         items.push(LOG);
+        items.push(DELETE);
         break;
 
       case 'success':
         items.push(RESTART);
         items.push(LOG);
+        items.push(DELETE);
         items.push({
           label: 'Download',
           icon: 'pi pi-download',
@@ -393,7 +495,7 @@ export class CaseComponent {
               }),
         };
 
-    const items: MenuItem[] = [
+    this.caseMenuItems = [
       {
         label: 'Copy GUID',
         icon: 'pi pi-tag',
@@ -421,7 +523,6 @@ export class CaseComponent {
       },
     ];
 
-    this.caseMenuItems = [...items];
     this.caseMenu.toggle(ev);
   }
 
@@ -440,15 +541,7 @@ export class CaseComponent {
 
     modal.onClose.pipe(take(1)).subscribe((collector: Collector | null) => {
       if (!collector) return;
-      this.apiService
-        .importCaseCollector(collector, this.caseMeta?.guid!)
-        .pipe(take(1))
-        .subscribe({
-          next: (c) => {
-            this.caseCollectors = [...this.caseCollectors, c];
-            this.sortCollectors();
-          },
-        });
+      this.apiService.importCaseCollector(collector, this.caseMeta?.guid!).pipe(take(1)).subscribe();
     });
   }
 
@@ -467,17 +560,7 @@ export class CaseComponent {
 
     modal.onClose.pipe(take(1)).subscribe((collector: Collector | null) => {
       if (!collector) return;
-      this.uploadProgress = 'Generating collector ...';
-      this.apiService
-        .postCaseCollector(collector, this.caseMeta?.guid!)
-        .pipe(take(1))
-        .subscribe({
-          next: (c) => {
-            this.caseCollectors.push(c);
-            this.sortCollectors();
-            this.uploadProgress = '';
-          },
-        });
+      this.apiService.postCaseCollector(collector, this.caseMeta?.guid!).pipe(take(1)).subscribe();
     });
   }
 
@@ -538,7 +621,6 @@ export class CaseComponent {
 
               case HttpEventType.Response:
                 let collection = (event.body as APIResponse<Collection>)['data'];
-
                 this.uploadProgress = '';
                 const modal = this.dialogService.open(CollectionEditModalComponent, {
                   header: 'Edit Collection',
@@ -557,27 +639,14 @@ export class CaseComponent {
                 });
 
                 modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
-                  if (pCollection) {
-                    this.apiService
-                      .putCaseCollection(this.caseMeta!.guid, pCollection)
-                      .pipe(take(1))
-                      .subscribe({
-                        next: (collection) => {
-                          this.caseCollections.push(collection);
-                          this.sortCollections();
-                        },
-                      });
-                  } else {
-                    this.caseCollections.push(collection);
-                  }
+                  if (pCollection)
+                    this.apiService.putCaseCollection(this.caseMeta!.guid, pCollection).pipe(take(1)).subscribe();
+                  else this.caseCollections.push(collection);
                 });
                 break;
             }
           },
-          error: (error: HttpErrorResponse) => {
-            this.uploadProgress = '';
-            console.error(error);
-          },
+          error: (error: HttpErrorResponse) => console.error(error),
         });
       },
     });
@@ -642,24 +711,7 @@ export class CaseComponent {
     });
 
     modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
-      if (pCollection)
-        this.apiService
-          .putCaseCollection(this.caseMeta!.guid, pCollection)
-          .pipe(take(1))
-          .subscribe({
-            next: (collection) => {
-              this.displayedCollections.splice(
-                this.displayedCollections.findIndex((c) => c.guid == collection.guid),
-                1,
-                collection,
-              );
-              this.caseCollections.splice(
-                this.caseCollections.findIndex((c) => c.guid == collection.guid),
-                1,
-                collection,
-              );
-            },
-          });
+      if (pCollection) this.apiService.putCaseCollection(this.caseMeta!.guid, pCollection).pipe(take(1)).subscribe();
     });
   }
 
@@ -687,7 +739,6 @@ export class CaseComponent {
           .pipe(take(1))
           .subscribe({
             next: () => this.utilsService.toast('success', 'Success', 'Cache removed'),
-            error: () => this.utilsService.toast('error', 'Error', 'Error removing cache'),
           });
       },
     });
@@ -711,8 +762,18 @@ export class CaseComponent {
       });
   }
 
+  deleteAnalysis(guid: string, analyzerName: string) {
+    this.apiService
+      .deleteCollectionAnalysis(this.caseMeta!.guid, guid, analyzerName)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.apiService.getCollectionAnalyses(this.caseMeta!.guid, guid).pipe(take(1)).subscribe();
+        },
+      });
+  }
+
   deleteCase() {
-    const confirm_text = this.caseMeta?.name;
     if (!this.caseMeta || !this.caseMeta.name) return;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
@@ -722,23 +783,16 @@ export class CaseComponent {
       breakpoints: {
         '640px': '90vw',
       },
-      data: confirm_text,
+      data: this.caseMeta?.name,
     });
 
-    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed || confirm_text != confirmed) return;
-      this.apiService
-        .deleteCase(this.caseMeta!.guid)
-        .pipe(take(1))
-        .subscribe({
-          next: () => this.utilsService.navigateHomeWithError(),
-          error: () => this.utilsService.toast('error', 'Error', 'An error occured, case not deleted'),
-        });
+    modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.apiService.deleteCase(this.caseMeta!.guid).pipe(take(1)).subscribe();
     });
   }
 
   deleteCollector(collector: Collector) {
-    const confirm_text = collector.fingerprint || collector.guid;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
@@ -746,27 +800,16 @@ export class CaseComponent {
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
-      data: confirm_text,
+      data: collector.fingerprint || collector.guid,
     });
 
-    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed || confirm_text != confirmed) return;
-      this.apiService
-        .deleteCollector(this.caseMeta!.guid, collector.guid)
-        .pipe(take(1))
-        .subscribe({
-          next: () =>
-            this.caseCollectors.splice(
-              this.caseCollectors.findIndex((c) => c.guid == collector.guid),
-              1,
-            ),
-          error: () => this.utilsService.toast('error', 'Error', 'An error occured, collector not deleted'),
-        });
+    modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.apiService.deleteCollector(this.caseMeta!.guid, collector.guid).pipe(take(1)).subscribe();
     });
   }
 
   deleteCollection(collection: Collection) {
-    const confirm_text = collection.hostname || collection.guid;
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
@@ -774,22 +817,12 @@ export class CaseComponent {
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
-      data: confirm_text,
+      data: collection.hostname || collection.guid,
     });
 
-    modal.onClose.pipe(take(1)).subscribe((confirmed: string | null) => {
-      if (!confirmed || confirm_text != confirmed) return;
-      this.apiService
-        .deleteCollection(this.caseMeta!.guid, collection.guid)
-        .pipe(take(1))
-        .subscribe({
-          next: () =>
-            this.displayedCollections.splice(
-              this.displayedCollections.findIndex((c) => c.guid == collection.guid),
-              1,
-            ),
-          error: () => this.utilsService.toast('error', 'Error', 'An error occured, collection not deleted'),
-        });
+    modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
+      if (!confirmed) return;
+      this.apiService.deleteCollection(this.caseMeta!.guid, collection.guid).pipe(take(1)).subscribe();
     });
   }
 }

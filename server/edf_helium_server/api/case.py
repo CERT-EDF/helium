@@ -123,13 +123,15 @@ async def api_analysis_delete(request: Request):
     analysis = await storage.retrieve_analysis(
         case_guid, collection_guid, analyzer
     )
+    if not analysis:
+        return json_response(status=404, message="Analysis not found")
     deleted = await storage.delete_analysis(
         case_guid, collection_guid, analyzer
     )
     await fusion_evt_api.notify(
         category='delete_analysis',
         case=case,
-        ext={'analysis': analysis.to_dict()},
+        ext=analysis.to_dict(),
     )
     if not deleted:
         return json_response(status=400, message="Not deleted")
@@ -218,6 +220,7 @@ async def api_analysis_post(request: Request):
     """Create case collection analysis"""
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
+    fusion_evt_api = get_fusion_evt_api(request)
     _, storage = await prologue(
         request,
         'create_analysis',
@@ -234,6 +237,16 @@ async def api_analysis_post(request: Request):
         )
     except ValueError as exc:
         return json_response(status=400, message=str(exc))
+    case = await storage.retrieve_case(case_guid)
+    collection = await storage.retrieve_collection(case_guid, collection_guid)
+    await fusion_evt_api.notify(
+        category='create_analysis',
+        case=case,
+        ext={
+            'analysis': analysis.to_dict(),
+            'collection': collection.to_dict(),
+        },
+    )
     return json_response(data=analysis.to_dict())
 
 
@@ -307,7 +320,7 @@ async def api_collection_delete(request: Request):
     await fusion_evt_api.notify(
         category='delete_collection',
         case=case,
-        ext={'collection': collection.to_dict()},
+        ext=collection.to_dict(),
     )
     if not deleted:
         return json_response(status=400, message="Not deleted")
@@ -379,7 +392,7 @@ async def api_collection_post(request: Request):
     await fusion_evt_api.notify(
         category='create_collection',
         case=case,
-        ext={'collection': collection_dct},
+        ext=collection_dct,
     )
     return json_response(data=collection_dct)
 
@@ -411,7 +424,7 @@ async def api_collection_put(request: Request):
     await fusion_evt_api.notify(
         category='update_collection',
         case=case,
-        ext={'collection': collection_dct},
+        ext=collection_dct,
     )
     return json_response(data=collection_dct)
 
@@ -451,7 +464,7 @@ async def api_collector_delete(request: Request):
     await fusion_evt_api.notify(
         category='delete_collector',
         case=case,
-        ext={'collector': collector.to_dict()},
+        ext=collector.to_dict(),
     )
     if not deleted:
         return json_response(status=400, message="Not deleted")
@@ -514,7 +527,7 @@ async def api_collector_post(request: Request):
     await fusion_evt_api.notify(
         category='create_collector',
         case=case,
-        ext={'collector': collector_dct},
+        ext=collector_dct,
     )
     return json_response(data=collector_dct)
 
@@ -537,7 +550,7 @@ async def api_collector_import_post(request: Request):
     await fusion_evt_api.notify(
         category='import_collector',
         case=case,
-        ext={'collector': collector_dct},
+        ext=collector_dct,
     )
     return json_response(data=collector_dct)
 

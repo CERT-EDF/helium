@@ -13,3 +13,10 @@ export interface CaseMetadata {
   total?: number; // injected for quota meter
   unseenNew?: boolean; //Injected value in API getCases
 }
+
+export interface FusionEvent {
+  source: string;
+  category: string;
+  case: CaseMetadata;
+  ext: any;
+}
