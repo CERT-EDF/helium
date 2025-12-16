@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Security",
 ]
 dependencies = [
-    "edf-helium-core~=1.0",
+    "edf-helium-core~=2.0",
 ]
 
 
