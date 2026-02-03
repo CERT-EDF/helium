@@ -173,6 +173,8 @@ export class CaseComponent implements OnDestroy {
                 this.caseDiskUsage['_total'] = du.analyses + du.collections + du.collectors;
               },
             });
+
+          this.utilsService.setTitle(`Helium - ${caseMeta.name}`);
         },
         error: () => this.utilsService.navigateHomeWithError('Error while retrieving case'),
       });
