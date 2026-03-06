@@ -19,7 +19,7 @@ RUN apk add build-base zip linux-headers && \
     /venv/bin/uv pip install --python /venv/bin/python argon2-cffi python-keycloak edf-helium-server && \
     /venv/bin/generaptor --cache /tpl/generaptor/cache update && \
     cd /tpl && \
-    zip generaptor.zip generaptor/ && \
+    zip -r generaptor.zip generaptor/ && \
     rm -rf generaptor/
 # =============================================================================
 # PRODUCTION IMAGE
