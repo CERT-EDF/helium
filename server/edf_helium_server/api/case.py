@@ -152,15 +152,15 @@ async def api_analysis_log_get(request: Request) -> StreamResponse:
             'analyzer': analyzer,
         },
     )
-    analysis_storage = storage.analysis_storage(
+    log = storage.retrieve_analysis_log(
         case_guid, collection_guid, analyzer
     )
-    if not analysis_storage.log.is_file():
+    if not log:
         return json_response(status=404, message="Analysis log not found")
     response = await stream_response(
         request,
         f'{collection_guid}_{analyzer}.log',
-        stream_from_file(analysis_storage.log),
+        stream_from_file(log),
     )
     return response
 
@@ -455,15 +455,15 @@ async def api_collector_config_get(request: Request):
             'collector_guid': collector_guid,
         },
     )
-    collector_storage = storage.collector_storage(
+    config = storage.retrieve_collector_config(
         case_guid, collector_guid
     )
-    if not collector_storage.config:
+    if not config:
         return json_response(status=404, message="Collector config not found")
     response = await stream_response(
         request,
-        f'{collector_guid}.yml',
-        stream_from_file(collector_storage.config),
+        config.name,
+        stream_from_file(config),
     )
     return response
 

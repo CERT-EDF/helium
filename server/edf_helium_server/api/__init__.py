@@ -35,6 +35,7 @@ from .case import (
 )
 from .config import (
     api_analyzers_get,
+    api_collector_template_download_get,
     api_profiles_get,
     api_rules_get,
     api_targets_get,
@@ -126,6 +127,10 @@ def setup_api(webapp: Application):
                 api_analysis_download_get,
             ),
             get('/api/config/analyzers', api_analyzers_get),
+            get(
+                '/api/config/collector/{opsystem}/{arch}/download',
+                api_collector_template_download_get,
+            ),
             get('/api/config/{opsystem}/profiles', api_profiles_get),
             get('/api/config/{opsystem}/targets', api_targets_get),
             get('/api/config/{opsystem}/rules', api_rules_get),

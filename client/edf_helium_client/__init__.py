@@ -65,6 +65,20 @@ class HeliumClient:
             endpoint, concept_cls=PendingDownloadKey
         )
 
+    async def download_collector_template(
+        self, opsystem: OperatingSystem, arch: Architecture
+    ) -> PendingDownloadKey | None:
+        """Download collector template binary"""
+        _LOGGER.info(
+            "downloading collector template for %s-%s",
+            opsystem.value,
+            arch.value,
+        )
+        endpoint = f'/api/config/collector/{opsystem}/{arch}/download'
+        return await self.fusion_client.get(
+            endpoint, concept_cls=PendingDownloadKey
+        )
+
     async def delete_collector(
         self, case_guid: UUID, collector_guid: UUID
     ) -> bool:

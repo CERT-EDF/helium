@@ -197,6 +197,16 @@ export class ApiService {
       );
   }
 
+  downloadCollectorTemplate(opSystem: string, arch: string): Observable<any> {
+    return this.http
+      .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/config/collector/${opSystem}/${arch}/download`)
+      .pipe(
+        map((resp) => {
+          window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
+        }),
+      );
+  }
+
   deleteCollector(caseGuid: string, collectorGuid: string): Observable<any> {
     return this.http.delete<any>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}`);
   }
