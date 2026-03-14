@@ -443,6 +443,31 @@ async def api_collections_get(request: Request):
     )
 
 
+async def api_collector_config_get(request: Request):
+    """Retrieve collector config"""
+    case_guid = get_guid(request, 'case_guid')
+    collector_guid = get_guid(request, 'collector_guid')
+    _, storage = await prologue(
+        request,
+        'download_collector_config',
+        context={
+            'case_guid': case_guid,
+            'collector_guid': collector_guid,
+        },
+    )
+    collector_storage = storage.collector_storage(
+        case_guid, collector_guid
+    )
+    if not collector_storage.config:
+        return json_response(status=404, message="Collector config not found")
+    response = await stream_response(
+        request,
+        f'{collector_guid}.yml',
+        stream_from_file(collector_storage.config),
+    )
+    return response
+
+
 async def api_collector_delete(request: Request):
     """Delete collector"""
     case_guid = get_guid(request, 'case_guid')

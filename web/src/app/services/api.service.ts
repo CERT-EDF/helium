@@ -174,6 +174,13 @@ export class ApiService {
       .pipe(map((c) => c.data));
   }
 
+  getCaseCollectorConfig(caseGuid: string, collectorGuid: string): Observable<string> {
+    return this.http.get<string>(
+      `${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/config`,
+      { responseType: 'text' as 'json' },
+    );
+  }
+
   getCaseCollectorSecrets(caseGuid: string, collectorGuid: string): Observable<CollectorSecret> {
     return this.http
       .get<APIResponse<CollectorSecret>>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/secrets`)

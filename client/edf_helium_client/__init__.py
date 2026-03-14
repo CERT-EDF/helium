@@ -82,6 +82,13 @@ class HeliumClient:
         endpoint = f'/api/case/{case_guid}/collector/{collector_guid}'
         return await self.fusion_client.get(endpoint, concept_cls=Collector)
 
+    async def retrieve_collector_config(
+        self, case_guid: UUID, collector_guid: UUID, output: Path
+    ) -> Path | None:
+        """Retrieve collector config"""
+        endpoint = f'/api/case/{case_guid}/collector/{collector_guid}/config'
+        return await self.fusion_client.download(endpoint, output)
+
     async def retrieve_collector_secrets(
         self, case_guid: UUID, collector_guid: UUID
     ) -> CollectorSecrets:

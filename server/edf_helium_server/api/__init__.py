@@ -18,6 +18,7 @@ from .case import (
     api_collection_post,
     api_collection_put,
     api_collections_get,
+    api_collector_config_get,
     api_collector_delete,
     api_collector_download_get,
     api_collector_get,
@@ -61,6 +62,10 @@ def setup_api(webapp: Application):
             delete(
                 '/api/case/{case_guid}/collector/{collector_guid}',
                 api_collector_delete,
+            ),
+            get(
+                '/api/case/{case_guid}/collector/{collector_guid}/config',
+                api_collector_config_get,
             ),
             get(
                 '/api/case/{case_guid}/collector/{collector_guid}/secrets',
