@@ -346,10 +346,25 @@ class Storage(FusionStorage):
             return None
         return CollectorSecrets.from_filepath(secrets)
 
+    async def retrieve_collector_config(
+        self, case_guid: UUID, collector_guid: UUID
+    ) -> Path | None:
+        """Retrieve case collector config path"""
+        collector_storage = self.collector_storage(case_guid, collector_guid)
+        return collector_storage.config
+
+    async def retrieve_collector_template(
+        self, opsystem: OperatingSystem, arch: Architecture
+    ) -> Path | None:
+        """Retrieve collector template path"""
+        distrib = Distribution(arch=arch, opsystem=opsystem)
+        template = self.generaptor.cache.template_binary(distrib)
+        return template
+
     async def retrieve_collector_executable(
         self, case_guid: UUID, collector_guid: UUID
     ) -> Path | None:
-        """Retrieve case collector content"""
+        """Retrieve case collector path"""
         collector_storage = self.collector_storage(case_guid, collector_guid)
         return collector_storage.executable
 
@@ -520,6 +535,19 @@ class Storage(FusionStorage):
             _LOGGER.error("analysis metadata not found: %s", metadata)
             return None
         return Analysis.from_filepath(metadata)
+
+    async def retrieve_analysis_log(
+        self, case_guid: UUID, collection_guid: UUID, analyzer: str
+    ) -> Path | None:
+        """Retrieve analysis log"""
+        analysis_storage = self.analysis_storage(
+            case_guid, collection_guid, analyzer
+        )
+        log = analysis_storage.log
+        if not log.is_file():
+            _LOGGER.error("analysis log not found: %s", log)
+            return None
+        return log
 
     async def retrieve_analysis_data(
         self, case_guid: UUID, collection_guid: UUID, analyzer: str

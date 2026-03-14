@@ -18,6 +18,7 @@ from .case import (
     api_collection_post,
     api_collection_put,
     api_collections_get,
+    api_collector_config_get,
     api_collector_delete,
     api_collector_download_get,
     api_collector_get,
@@ -34,6 +35,7 @@ from .case import (
 )
 from .config import (
     api_analyzers_get,
+    api_collector_template_download_get,
     api_profiles_get,
     api_rules_get,
     api_targets_get,
@@ -61,6 +63,10 @@ def setup_api(webapp: Application):
             delete(
                 '/api/case/{case_guid}/collector/{collector_guid}',
                 api_collector_delete,
+            ),
+            get(
+                '/api/case/{case_guid}/collector/{collector_guid}/config',
+                api_collector_config_get,
             ),
             get(
                 '/api/case/{case_guid}/collector/{collector_guid}/secrets',
@@ -121,6 +127,10 @@ def setup_api(webapp: Application):
                 api_analysis_download_get,
             ),
             get('/api/config/analyzers', api_analyzers_get),
+            get(
+                '/api/config/collector/{opsystem}/{arch}/download',
+                api_collector_template_download_get,
+            ),
             get('/api/config/{opsystem}/profiles', api_profiles_get),
             get('/api/config/{opsystem}/targets', api_targets_get),
             get('/api/config/{opsystem}/rules', api_rules_get),

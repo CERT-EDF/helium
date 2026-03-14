@@ -174,6 +174,13 @@ export class ApiService {
       .pipe(map((c) => c.data));
   }
 
+  getCaseCollectorConfig(caseGuid: string, collectorGuid: string): Observable<string> {
+    return this.http.get<string>(
+      `${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/config`,
+      { responseType: 'text' as 'json' },
+    );
+  }
+
   getCaseCollectorSecrets(caseGuid: string, collectorGuid: string): Observable<CollectorSecret> {
     return this.http
       .get<APIResponse<CollectorSecret>>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/secrets`)
@@ -183,6 +190,16 @@ export class ApiService {
   downloadCollector(caseGuid: string, collectorGuid: string): Observable<any> {
     return this.http
       .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/download`)
+      .pipe(
+        map((resp) => {
+          window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
+        }),
+      );
+  }
+
+  downloadCollectorTemplate(opSystem: string, arch: string): Observable<any> {
+    return this.http
+      .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/config/collector/${opSystem}/${arch}/download`)
       .pipe(
         map((resp) => {
           window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
