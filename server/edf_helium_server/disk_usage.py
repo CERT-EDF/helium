@@ -7,6 +7,7 @@ from signal import SIGINT, SIGTERM
 
 from edf_fusion.helper.datetime import utcnow
 from edf_fusion.helper.logging import get_logger
+from edf_fusion.helper.redis import create_redis
 from edf_helium_core.concept import CaseDiskUsage, DiskUsage
 
 from .__version__ import version
@@ -91,5 +92,6 @@ def app():
     except:
         _LOGGER.exception("invalid configuration file: %s", args.config)
         return
-    storage = Storage(config=config.storage)
+    redis = create_redis(config.server.redis_url)
+    storage = Storage(redis=redis, config=config.storage)
     run(_compute_du_loop(storage))

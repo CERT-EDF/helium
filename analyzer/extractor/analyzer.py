@@ -24,7 +24,6 @@ async def _extractor_process_impl(
     analysis_storage = storage.analysis_storage(
         a_task.case.guid, a_task.collection.guid, a_task.analysis.analyzer
     )
-    analysis_storage.data_dir.mkdir(parents=True, exist_ok=True)
     src = collection_storage.data_dir.resolve()
     dst = analysis_storage.data_dir.resolve()
     try:

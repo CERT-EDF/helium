@@ -1,4 +1,12 @@
 # =============================================================================
+# FUSION DIRECTIVES
+# =============================================================================
+# fusion:image=cert-edf/helium-be-hayabusa
+# fusion:package=generaptor
+# fusion:package=edf-fusion
+# fusion:package=edf-helium-core
+# fusion:package=edf-helium-server
+# =============================================================================
 # ENV IMAGE
 # =============================================================================
 FROM python:3.12-alpine AS env
@@ -6,7 +14,7 @@ FROM python:3.12-alpine AS env
 # ENVIRONMENT
 # ------------------------------------------------------------------------------
 ENV HAYABUSA_LIBC=musl
-ENV HAYABUSA_VERSION=3.6.0
+ENV HAYABUSA_VERSION=3.8.1
 # =============================================================================
 # BUILD IMAGE
 # =============================================================================
@@ -25,9 +33,17 @@ ENV HAYABUSA_URL=https://github.com/Yamato-Security/hayabusa/releases/download/v
 RUN apk add build-base curl linux-headers && \
     python3 -m venv /venv && \
     /venv/bin/python -m pip install uv && \
-    /venv/bin/uv pip install --python /venv/bin/python edf-helium-server && \
     mkdir /tpl && \
     curl -L -o /tpl/hayabusa.zip ${HAYABUSA_URL}
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (PROD)
+# -----------------------------------------------------------------------------
+RUN /venv/bin/uv pip install --python /venv/bin/python edf-helium-server
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (DEV)
+# -----------------------------------------------------------------------------
+#COPY pkg /pkg
+#RUN /venv/bin/uv pip install --python /venv/bin/python --pre --find-links /pkg edf-helium-server
 # =============================================================================
 # PRODUCTION IMAGE
 # =============================================================================

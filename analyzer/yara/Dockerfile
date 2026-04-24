@@ -1,4 +1,12 @@
 # =============================================================================
+# FUSION DIRECTIVES
+# =============================================================================
+# fusion:image=cert-edf/helium-be-yara
+# fusion:package=edf-fusion
+# fusion:package=generaptor
+# fusion:package=edf-helium-core
+# fusion:package=edf-helium-server
+# =============================================================================
 # BUILD IMAGE
 # =============================================================================
 FROM python:3.12-alpine AS build
@@ -16,9 +24,17 @@ ENV YARA_RULES_URL=https://github.com/Yara-Rules/rules/archive/refs/heads/master
 RUN apk add build-base curl linux-headers && \
     python3 -m venv /venv && \
     /venv/bin/python -m pip install uv && \
-    /venv/bin/uv pip install --python /venv/bin/python edf-helium-server && \
     mkdir /tpl && \
     curl -L -o /tpl/yara-rules.zip ${YARA_RULES_URL}
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (PROD)
+# -----------------------------------------------------------------------------
+RUN /venv/bin/uv pip install --python /venv/bin/python edf-helium-server
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (DEV)
+# -----------------------------------------------------------------------------
+#COPY pkg /pkg
+#RUN /venv/bin/uv pip install --python /venv/bin/python --pre --find-links /pkg edf-helium-server
 # =============================================================================
 # PRODUCTION IMAGE
 # =============================================================================

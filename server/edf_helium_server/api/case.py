@@ -11,6 +11,7 @@ from edf_fusion.helper.aiohttp import (
 )
 from edf_fusion.helper.logging import get_logger
 from edf_fusion.helper.streaming import stream_from_file
+from edf_fusion.server.auth import Action
 from edf_fusion.server.case import (
     AttachContext,
     CreateContext,
@@ -87,11 +88,11 @@ async def api_analyses_get(request: Request):
     """Enumerate case collection analyses"""
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
-    _, storage = await prologue(
-        request,
-        'enumerate_analyses',
+    action = Action(
+        name='enumerate_analyses',
         context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     return json_response(
         data=[
             analysis.to_dict()
@@ -108,17 +109,17 @@ async def api_analysis_delete(request: Request):
     collection_guid = get_guid(request, 'collection_guid')
     fusion_evt_api = get_fusion_evt_api(request)
     analyzer = request.match_info['analyzer']
-    _, storage = await prologue(
-        request,
-        'delete_analysis',
+    action = Action(
+        name='delete_analysis',
+        change=True,
+        delete=True,
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'analyzer': analyzer,
-            'case_open_check': True,
-            'is_delete_op': True,
         },
     )
+    _, storage = await prologue(request, action)
     case = await storage.retrieve_case(case_guid)
     analysis = await storage.retrieve_analysis(
         case_guid, collection_guid, analyzer
@@ -143,16 +144,16 @@ async def api_analysis_log_get(request: Request) -> StreamResponse:
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     analyzer = request.match_info['analyzer']
-    _, storage = await prologue(
-        request,
-        'download_analysis_log',
+    action = Action(
+        name='download_analysis_log',
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'analyzer': analyzer,
         },
     )
-    log = storage.retrieve_analysis_log(
+    _, storage = await prologue(request, action)
+    log = await storage.retrieve_analysis_log(
         case_guid, collection_guid, analyzer
     )
     if not log:
@@ -171,15 +172,15 @@ async def api_analysis_download_get(request: Request):
     collection_guid = get_guid(request, 'collection_guid')
     fusion_dl_api = get_fusion_dl_api(request)
     analyzer = request.match_info['analyzer']
-    _, storage = await prologue(
-        request,
-        'download_analysis_data',
+    action = Action(
+        name='download_analysis_data',
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'analyzer': analyzer,
         },
     )
+    _, storage = await prologue(request, action)
     filepath = await storage.retrieve_analysis_data(
         case_guid, collection_guid, analyzer
     )
@@ -199,15 +200,15 @@ async def api_analysis_get(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     analyzer = request.match_info['analyzer']
-    _, storage = await prologue(
-        request,
-        'retrieve_analysis',
+    action = Action(
+        name='retrieve_analysis',
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'analyzer': analyzer,
         },
     )
+    _, storage = await prologue(request, action)
     analysis = await storage.retrieve_analysis(
         case_guid, collection_guid, analyzer
     )
@@ -221,15 +222,12 @@ async def api_analysis_post(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'create_analysis',
-        context={
-            'case_guid': case_guid,
-            'collection_guid': collection_guid,
-            'case_open_check': True,
-        },
+    action = Action(
+        name='create_analysis',
+        change=True,
+        context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     body = await get_json_body(request)
     try:
         analysis = await storage.create_analysis(
@@ -255,16 +253,16 @@ async def api_analysis_put(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     analyzer = request.match_info['analyzer']
-    _, storage = await prologue(
-        request,
-        'update_analysis',
+    action = Action(
+        name='update_analysis',
+        change=True,
         context={
             'case_guid': case_guid,
             'collection_guid': collection_guid,
             'analyzer': analyzer,
-            'case_open_check': True,
         },
     )
+    _, storage = await prologue(request, action)
     body = await get_json_body(request)
     dct = {'status': Status.PENDING.value}
     priority = body.get('priority')
@@ -283,16 +281,13 @@ async def api_collection_cache_delete(request: Request):
     """Delete collection case directory"""
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
-    _, storage = await prologue(
-        request,
-        'delete_collection_cache',
-        context={
-            'case_guid': case_guid,
-            'collection_guid': collection_guid,
-            'case_open_check': True,
-            # is_delete_op is not expected to be set here
-        },
+    action = Action(
+        name='delete_collection_cache',
+        change=True,
+        delete=False,  # anyone can delete cached data
+        context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     deleted = await storage.delete_collection_cache(case_guid, collection_guid)
     if not deleted:
         return json_response(status=404, message="Collection cache is empty")
@@ -304,16 +299,13 @@ async def api_collection_delete(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'delete_collection',
-        context={
-            'case_guid': case_guid,
-            'collection_guid': collection_guid,
-            'case_open_check': True,
-            'is_delete_op': True,
-        },
+    action = Action(
+        name='delete_collection',
+        change=True,
+        delete=True,
+        context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     case = await storage.retrieve_case(case_guid)
     collection = await storage.retrieve_collection(case_guid, collection_guid)
     deleted = await storage.delete_collection(case_guid, collection_guid)
@@ -332,17 +324,17 @@ async def api_collection_download_get(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     fusion_dl_api = get_fusion_dl_api(request)
-    _, storage = await prologue(
-        request,
-        'collection_download',
+    action = Action(
+        name='download_collection',
         context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     filepath = await storage.retrieve_collection_data(
         case_guid, collection_guid
     )
     if not filepath:
         return json_response(status=404, message="Collection not found")
-    pdk = await fusion_dl_api.prepare(filepath, f"{collection_guid}.zip")
+    pdk = await fusion_dl_api.prepare(filepath, f'{collection_guid}.zip')
     if not pdk:
         return json_response(
             status=503, message="Cannot process more download requests for now"
@@ -354,11 +346,11 @@ async def api_collection_get(request: Request):
     """Retrieve case collection metadata"""
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
-    _, storage = await prologue(
-        request,
-        'retrieve_collection',
+    action = Action(
+        name='retrieve_collection',
         context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     collection = await storage.retrieve_collection(case_guid, collection_guid)
     if not collection:
         return json_response(status=404, message="Collection not found")
@@ -369,11 +361,12 @@ async def api_collection_post(request: Request):
     """Create case collection"""
     case_guid = get_guid(request, 'case_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'create_collection',
-        context={'case_guid': case_guid, 'case_open_check': True},
+    action = Action(
+        name='create_collection',
+        change=True,
+        context={'case_guid': case_guid},
     )
+    _, storage = await prologue(request, action)
     collection = None
     async for part in stream_multipart_parts(request, {'file'}):
         if collection:
@@ -402,15 +395,12 @@ async def api_collection_put(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collection_guid = get_guid(request, 'collection_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'update_collection',
-        context={
-            'case_guid': case_guid,
-            'collection_guid': collection_guid,
-            'case_open_check': True,
-        },
+    action = Action(
+        name='update_collection',
+        change=True,
+        context={'case_guid': case_guid, 'collection_guid': collection_guid},
     )
+    _, storage = await prologue(request, action)
     body = await get_json_body(request)
     collection = await storage.update_collection(
         case_guid, collection_guid, body
@@ -432,9 +422,10 @@ async def api_collection_put(request: Request):
 async def api_collections_get(request: Request):
     """Enumerate case collections"""
     case_guid = get_guid(request, 'case_guid')
-    _, storage = await prologue(
-        request, 'enumerate_collections', context={'case_guid': case_guid}
+    action = Action(
+        name='enumerate_collections', context={'case_guid': case_guid}
     )
+    _, storage = await prologue(request, action)
     return json_response(
         data=[
             collection.to_dict()
@@ -447,17 +438,12 @@ async def api_collector_config_get(request: Request):
     """Retrieve collector config"""
     case_guid = get_guid(request, 'case_guid')
     collector_guid = get_guid(request, 'collector_guid')
-    _, storage = await prologue(
-        request,
-        'download_collector_config',
-        context={
-            'case_guid': case_guid,
-            'collector_guid': collector_guid,
-        },
+    action = Action(
+        name='download_collector_config',
+        context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
-    config = storage.retrieve_collector_config(
-        case_guid, collector_guid
-    )
+    _, storage = await prologue(request, action)
+    config = storage.retrieve_collector_config(case_guid, collector_guid)
     if not config:
         return json_response(status=404, message="Collector config not found")
     response = await stream_response(
@@ -473,16 +459,13 @@ async def api_collector_delete(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collector_guid = get_guid(request, 'collector_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'delete_collector',
-        context={
-            'case_guid': case_guid,
-            'collector_guid': collector_guid,
-            'case_open_check': True,
-            'is_delete_op': True,
-        },
+    action = Action(
+        name='delete_collector',
+        change=True,
+        delete=True,
+        context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
+    _, storage = await prologue(request, action)
     case = await storage.retrieve_case(case_guid)
     collector = await storage.retrieve_collector(case_guid, collector_guid)
     deleted = await storage.delete_collector(case_guid, collector_guid)
@@ -501,11 +484,11 @@ async def api_collector_download_get(request: Request):
     case_guid = get_guid(request, 'case_guid')
     collector_guid = get_guid(request, 'collector_guid')
     fusion_dl_api = get_fusion_dl_api(request)
-    _, storage = await prologue(
-        request,
-        'download_collector',
+    action = Action(
+        name='download_collector',
         context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
+    _, storage = await prologue(request, action)
     executable = await storage.retrieve_collector_executable(
         case_guid, collector_guid
     )
@@ -523,11 +506,11 @@ async def api_collector_get(request: Request):
     """Retrieve case collector metadata"""
     case_guid = get_guid(request, 'case_guid')
     collector_guid = get_guid(request, 'collector_guid')
-    _, storage = await prologue(
-        request,
-        'retrieve_collector',
+    action = Action(
+        name='retrieve_collector',
         context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
+    _, storage = await prologue(request, action)
     collector = await storage.retrieve_collector(case_guid, collector_guid)
     if not collector:
         return json_response(status=404, message="Collector not found")
@@ -538,11 +521,12 @@ async def api_collector_post(request: Request):
     """Create case collector"""
     case_guid = get_guid(request, 'case_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'create_collector',
-        context={'case_guid': case_guid, 'case_open_check': True},
+    action = Action(
+        name='create_collector',
+        change=True,
+        context={'case_guid': case_guid},
     )
+    _, storage = await prologue(request, action)
     body = await get_json_body(request)
     collector = await storage.create_collector(case_guid, body)
     if not collector:
@@ -561,11 +545,12 @@ async def api_collector_import_post(request: Request):
     """Import case collector (without binary)"""
     case_guid = get_guid(request, 'case_guid')
     fusion_evt_api = get_fusion_evt_api(request)
-    _, storage = await prologue(
-        request,
-        'import_collector',
-        context={'case_guid': case_guid, 'case_open_check': True},
+    action = Action(
+        name='import_collector',
+        change=True,
+        context={'case_guid': case_guid},
     )
+    _, storage = await prologue(request, action)
     body = await get_json_body(request)
     collector = await storage.import_collector(case_guid, body)
     if not collector:
@@ -584,11 +569,11 @@ async def api_collector_secrets_get(request: Request):
     """Retrieve case collector secrets"""
     case_guid = get_guid(request, 'case_guid')
     collector_guid = get_guid(request, 'collector_guid')
-    _, storage = await prologue(
-        request,
-        'retrieve_collector_secrets',
+    action = Action(
+        name='retrieve_collector_secrets',
         context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
+    _, storage = await prologue(request, action)
     collector_secrets = await storage.retrieve_collector_secrets(
         case_guid, collector_guid
     )
@@ -600,9 +585,10 @@ async def api_collector_secrets_get(request: Request):
 async def api_collectors_get(request: Request):
     """Enumerate case collectors"""
     case_guid = get_guid(request, 'case_guid')
-    _, storage = await prologue(
-        request, 'enumerate_collectors', context={'case_guid': case_guid}
+    action = Action(
+        name='enumerate_collectors', context={'case_guid': case_guid}
     )
+    _, storage = await prologue(request, action)
     return json_response(
         data=[
             collector.to_dict()

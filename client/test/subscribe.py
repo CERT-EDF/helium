@@ -3,6 +3,8 @@
 
 from argparse import ArgumentParser
 from asyncio import run
+from dataclasses import dataclass
+from pathlib import Path
 from uuid import UUID
 
 from edf_fusion.client import (
@@ -14,6 +16,7 @@ from edf_fusion.client import (
     create_session,
 )
 from edf_fusion.helper.logging import get_logger
+from edf_fusion.helper.serializing import Loadable
 from edf_helium_core.concept import Case
 from yarl import URL
 
@@ -30,16 +33,25 @@ async def _playbook(fusion_client: FusionClient, case_guid: UUID):
         _LOGGER.info("%s", event)
 
 
+@dataclass(kw_only=True)
+class TestConfig(Loadable):
+    """Test configuration"""
+
+    url: str
+    key: str
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(url=dct['url'], key=dct['key'])
+
+
 def _parse_args():
     parser = ArgumentParser()
-    parser.add_argument(
-        '--api-url',
-        type=URL,
-        default=URL('http://helium.domain.lan/'),
-        help="API URL",
-    )
+    parser.add_argument('config', type=Path, help="Test configuration")
     parser.add_argument('case_guid', type=UUID, help="Case GUID")
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.config = TestConfig.from_filepath(args.config)
+    return args
 
 
 async def app():
@@ -52,14 +64,14 @@ async def app():
         fusion_auth_api_client = FusionAuthAPIClient(
             fusion_client=fusion_client
         )
-        identity = await fusion_auth_api_client.login('test', 'test')
+        identity = await fusion_auth_api_client.is_logged()
         if not identity:
             return
         _LOGGER.info("logged as: %s", identity)
         try:
             await _playbook(fusion_client, args.case_guid)
-        finally:
-            await fusion_auth_api_client.logout()
+        except:
+            _LOGGER.exception("exception raised!")
 
 
 if __name__ == '__main__':

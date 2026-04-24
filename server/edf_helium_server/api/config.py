@@ -2,6 +2,7 @@
 
 from aiohttp.web import Request
 from edf_fusion.helper.aiohttp import json_response
+from edf_fusion.server.auth import Action
 from edf_fusion.server.config import FusionAnalyzerConfig
 from edf_fusion.server.download import get_fusion_dl_api
 from edf_helium_core.concept import Profile, Rule, Target
@@ -34,9 +35,10 @@ def _get_opsystem(request: Request) -> OperatingSystem | None:
 async def api_profiles_get(request: Request):
     """Retrieve collection profiles for given operating system"""
     opsystem = _get_opsystem(request)
-    _, storage = await prologue(
-        request, 'enumerate_profiles', context={'opsystem': opsystem.value}
+    action = Action(
+        name='enumerate_profiles', context={'opsystem': opsystem.value}
     )
+    _, storage = await prologue(request, action)
     profile_mapping = get_profile_mapping(
         storage.generaptor.cache,
         storage.generaptor.config,
@@ -55,9 +57,10 @@ async def api_profiles_get(request: Request):
 async def api_rules_get(request: Request):
     """Retrieve collection rules for given operating system"""
     opsystem = _get_opsystem(request)
-    _, storage = await prologue(
-        request, 'enumerate_rules', context={'opsystem': opsystem.value}
+    action = Action(
+        name='enumerate_rules', context={'opsystem': opsystem.value}
     )
+    _, storage = await prologue(request, action)
     _, rule_set = get_rule_set(
         storage.generaptor.cache,
         storage.generaptor.config,
@@ -83,9 +86,10 @@ async def api_rules_get(request: Request):
 async def api_targets_get(request: Request):
     """Retrieve collection targets for given operating system"""
     opsystem = _get_opsystem(request)
-    _, storage = await prologue(
-        request, 'enumerate_targets', context={'opsystem': opsystem.value}
+    action = Action(
+        name='enumerate_targets', context={'opsystem': opsystem.value}
     )
+    _, storage = await prologue(request, action)
     max_uid, _ = get_rule_set(
         storage.generaptor.cache,
         storage.generaptor.config,
@@ -107,7 +111,8 @@ async def api_targets_get(request: Request):
 
 async def api_analyzers_get(request: Request):
     """Retrieve analyzers config"""
-    _, storage = await prologue(request, 'enumerate_analyzers')
+    action = Action(name='enumerate_analyzers')
+    _, storage = await prologue(request, action)
     config = get_helium_config(request)
     analyzers = []
     async for analyzer in storage.enumerate_analyzers():
@@ -125,11 +130,11 @@ async def api_collector_template_download_get(request: Request):
     arch = _get_arch(request)
     opsystem = _get_opsystem(request)
     fusion_dl_api = get_fusion_dl_api(request)
-    _, storage = await prologue(
-        request,
-        'download_collector_template',
+    action = Action(
+        name='download_collector_template',
         context={'opsystem': opsystem, 'arch': arch},
     )
+    _, storage = await prologue(request, action)
     template = await storage.retrieve_collector_template(opsystem, arch)
     if not template:
         return json_response(

@@ -190,7 +190,7 @@ class Analyzer:
             self._config.event_api.api_key, self._config.event_api.timeout
         )
         self._redis = create_redis(self._config.server.redis_url)
-        self._storage = Storage(config=self._config.storage)
+        self._storage = Storage(redis=self._redis, config=self._config.storage)
         async with session:
             self._notifier = FusionNotifier(
                 redis=self._redis,

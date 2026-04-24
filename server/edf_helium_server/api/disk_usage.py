@@ -3,7 +3,7 @@
 from aiohttp.web import Request
 from edf_fusion.helper.aiohttp import json_response
 from edf_fusion.helper.datetime import utcnow
-from edf_fusion.server.auth import get_fusion_auth_api
+from edf_fusion.server.auth import Action, get_fusion_auth_api
 from edf_helium_core.concept import DiskUsage
 
 from ..helper.aiohttp import prologue
@@ -11,7 +11,8 @@ from ..helper.aiohttp import prologue
 
 async def api_disk_usage_get(request: Request):
     """Retrieve collection targets for given operating system"""
-    identity, storage = await prologue(request, 'disk_usage', context={})
+    action = Action(name='disk_usage')
+    identity, storage = await prologue(request, action)
     fusion_auth_api = get_fusion_auth_api(request)
     cannot_access_cases = [
         case.guid

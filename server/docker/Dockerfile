@@ -1,11 +1,15 @@
 # =============================================================================
+# FUSION DIRECTIVES
+# =============================================================================
+# fusion:image=cert-edf/helium-be
+# fusion:package=generaptor
+# fusion:package=edf-fusion
+# fusion:package=edf-helium-core
+# fusion:package=edf-helium-server
+# =============================================================================
 # BUILD IMAGE
 # =============================================================================
 FROM python:3.12-alpine AS build
-# -----------------------------------------------------------------------------
-# COPY PRE-BUILT PACKAGES (OPTIONAL)
-# -----------------------------------------------------------------------------
-#COPY pkg /pkg
 # -----------------------------------------------------------------------------
 # COPY TEMPLATES
 # -----------------------------------------------------------------------------
@@ -16,8 +20,20 @@ COPY tpl /tpl
 RUN apk add build-base zip linux-headers && \
     python3 -m venv /venv && \
     /venv/bin/python -m pip install uv && \
-    /venv/bin/uv pip install --python /venv/bin/python argon2-cffi python-keycloak edf-helium-server && \
-    /venv/bin/generaptor --cache /tpl/generaptor/cache update && \
+    /venv/bin/uv pip install --python /venv/bin/python argon2-cffi python-keycloak
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (PROD)
+# -----------------------------------------------------------------------------
+RUN /venv/bin/uv pip install --python /venv/bin/python edf-helium-server
+# -----------------------------------------------------------------------------
+# SETUP FUSION PACKAGES (DEV)
+# -----------------------------------------------------------------------------
+#COPY pkg /pkg
+#RUN /venv/bin/uv pip install --python /venv/bin/python --pre --find-links /pkg edf-helium-server
+# -----------------------------------------------------------------------------
+# INITIALIZE GENERAPTOR
+# -----------------------------------------------------------------------------
+RUN /venv/bin/generaptor --cache /tpl/generaptor/cache update && \
     cd /tpl && \
     zip -r generaptor.zip generaptor/ && \
     rm -rf generaptor/
