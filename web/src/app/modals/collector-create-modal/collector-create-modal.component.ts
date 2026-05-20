@@ -81,12 +81,11 @@ export class CollectorCreateModalComponent {
         next: (opsystem) => {
           if (!opsystem) return;
           this.apiService
-            .getOpsystemProfiles(opsystem)
+            .getHeliumProfiles(opsystem)
             .pipe(take(1))
             .subscribe({
               next: (profiles) => {
-                this.emptyProfiles = false;
-                if (!profiles.length) this.emptyProfiles = true;
+                this.emptyProfiles = !profiles.length;
                 this.profiles = profiles.map((p) => p.name);
               },
             });

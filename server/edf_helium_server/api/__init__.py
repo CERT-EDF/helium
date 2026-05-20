@@ -33,14 +33,24 @@ from .case import (
     retrieve_case_impl,
     update_case_impl,
 )
-from .config import (
-    api_analyzers_get,
-    api_collector_template_download_get,
+from .config import api_analyzers_get, api_collector_template_download_get
+from .disk_usage import api_disk_usage_get
+from .ptr import (
+    api_profile_delete,
+    api_profile_get,
+    api_profile_post,
+    api_profile_put,
     api_profiles_get,
+    api_rule_get,
+    api_rule_post,
+    api_rule_put,
     api_rules_get,
+    api_target_delete,
+    api_target_get,
+    api_target_post,
+    api_target_put,
     api_targets_get,
 )
-from .disk_usage import api_disk_usage_get
 
 _LOGGER = get_logger('server.api', root='helium')
 
@@ -131,10 +141,26 @@ def setup_api(webapp: Application):
                 '/api/config/collector/{opsystem}/{arch}/download',
                 api_collector_template_download_get,
             ),
-            get('/api/config/{opsystem}/profiles', api_profiles_get),
-            get('/api/config/{opsystem}/targets', api_targets_get),
-            get('/api/config/{opsystem}/rules', api_rules_get),
             get('/api/disk_usage', api_disk_usage_get),
+            get('/api/ptr/{opsystem}/profiles', api_profiles_get),
+            post('/api/ptr/{opsystem}/profile', api_profile_post),
+            get('/api/ptr/{opsystem}/profile/{profile_guid}', api_profile_get),
+            put('/api/ptr/{opsystem}/profile/{profile_guid}', api_profile_put),
+            delete(
+                '/api/ptr/{opsystem}/profile/{profile_guid}',
+                api_profile_delete,
+            ),
+            get('/api/ptr/{opsystem}/targets', api_targets_get),
+            post('/api/ptr/{opsystem}/target', api_target_post),
+            get('/api/ptr/{opsystem}/target/{target_guid}', api_target_get),
+            put('/api/ptr/{opsystem}/target/{target_guid}', api_target_put),
+            delete(
+                '/api/ptr/{opsystem}/target/{target_guid}', api_target_delete
+            ),
+            get('/api/ptr/{opsystem}/rules', api_rules_get),
+            post('/api/ptr/{opsystem}/rule', api_rule_post),
+            get('/api/ptr/{opsystem}/rule/{rule_guid}', api_rule_get),
+            put('/api/ptr/{opsystem}/rule/{rule_guid}', api_rule_put),
         ]
     )
     _LOGGER.info("helium api installed...")

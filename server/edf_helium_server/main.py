@@ -37,6 +37,7 @@ from .api import (
     update_case_impl,
 )
 from .config import HeliumServerConfig
+from .ptr_storage import PTRStorage
 from .storage import Storage
 
 _LOGGER = get_logger('server.main', root='helium')
@@ -115,6 +116,8 @@ async def _init_app(config: HeliumServerConfig) -> Application:
     setup_api(webapp)
     storage = Storage(redis=redis, config=config.storage)
     storage.setup(webapp)
+    ptr_storage = PTRStorage(redis=redis, config=config.storage)
+    ptr_storage.setup(webapp)
     return webapp
 
 
@@ -127,7 +130,7 @@ def app():
     args = _parse_args()
     try:
         config = HeliumServerConfig.from_filepath(args.config)
-    except:
+    except Exception:
         _LOGGER.exception("invalid configuration file: %s", args.config)
         return
     if not config:

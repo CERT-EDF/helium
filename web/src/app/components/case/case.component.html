@@ -24,7 +24,7 @@
 
 <p-menu #caseMenu [model]="caseMenuItems" [popup]="true" />
 <section class="my-4 px-4 md:px-16 max-w-7xl mx-auto">
-  <div [formGroup]="caseForm">
+  <div>
     <div class="flex justify-between">
       <div class="flex flex-col">
         @defer () {
@@ -156,6 +156,10 @@
           <p-button (click)="deleteCollector(collector)" icon="pi pi-trash" pTooltip="Delete" severity="danger" text />
           <p-button (click)="getCollectorSecrets(collector)" pTooltip="Secrets" severity="secondary" icon="pi pi-key"
             text />
+            @if (collector.profile) {
+              <p-button (click)="downloadCollectorConfig(collector)" pTooltip="Config" severity="secondary"
+            icon="pi pi-file" text />
+            }
           @if (collector.profile) {
           <p-button (click)="downloadCollector(collector.guid)" pTooltip="Download" severity="secondary"
             icon="pi pi-download" text />

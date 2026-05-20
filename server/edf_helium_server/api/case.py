@@ -24,8 +24,11 @@ from edf_fusion.server.download import get_fusion_dl_api
 from edf_fusion.server.event import get_fusion_evt_api
 from edf_fusion.server.storage import get_fusion_storage
 from edf_helium_core.concept import Case, Status
+from generaptor.concept import OperatingSystem
 
 from ..helper.aiohttp import prologue
+from ..helper.ptr import dump_internal_ptr
+from ..ptr_storage import get_ptr_storage
 
 _LOGGER = get_logger('server.api.case', root='helium')
 
@@ -443,7 +446,7 @@ async def api_collector_config_get(request: Request):
         context={'case_guid': case_guid, 'collector_guid': collector_guid},
     )
     _, storage = await prologue(request, action)
-    config = storage.retrieve_collector_config(case_guid, collector_guid)
+    config = await storage.retrieve_collector_config(case_guid, collector_guid)
     if not config:
         return json_response(status=404, message="Collector config not found")
     response = await stream_response(
@@ -468,6 +471,8 @@ async def api_collector_delete(request: Request):
     _, storage = await prologue(request, action)
     case = await storage.retrieve_case(case_guid)
     collector = await storage.retrieve_collector(case_guid, collector_guid)
+    if not collector:
+        return json_response(status=404, message="Collector not found")
     deleted = await storage.delete_collector(case_guid, collector_guid)
     await fusion_evt_api.notify(
         category='delete_collector',
@@ -527,7 +532,13 @@ async def api_collector_post(request: Request):
         context={'case_guid': case_guid},
     )
     _, storage = await prologue(request, action)
+    ptr_storage = get_ptr_storage(request)
     body = await get_json_body(request)
+    try:
+        opsystem = OperatingSystem(body['opsystem'])
+    except (KeyError, ValueError):
+        return json_response(status=400, message="Invalid collector")
+    await dump_internal_ptr(storage, ptr_storage, opsystem)
     collector = await storage.create_collector(case_guid, body)
     if not collector:
         return json_response(status=400, message="Invalid collector")

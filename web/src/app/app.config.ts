@@ -21,13 +21,7 @@ export const appConfig: ApplicationConfig = {
       },
       theme: {
         preset: HeliumThemePreset,
-        options: {
-          darkModeSelector: '.dark',
-          cssLayer: {
-            name: 'primeng',
-            order: 'tailwind, primeng',
-          },
-        },
+        options: { darkModeSelector: '.dark' },
       },
     }),
     MessageService,

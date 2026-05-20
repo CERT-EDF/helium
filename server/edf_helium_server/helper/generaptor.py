@@ -15,8 +15,8 @@ from generaptor.concept import CollectorConfig as GCollectorConfig
 from generaptor.concept import Config as GConfig
 from generaptor.concept import (
     Outcome,
-    get_profile_mapping,
-    get_ruleset_from_targets,
+    get_profile_set,
+    get_rule_set_from_targets,
 )
 from generaptor.helper.crypto import (
     certificate_from_pem_bytes,
@@ -56,10 +56,10 @@ class Generaptor:
         """Generate collector"""
         _LOGGER.info("generating collector %s", collector.guid)
         # load profile
-        profile_mapping = get_profile_mapping(
+        profile_set = get_profile_set(
             self.cache, self.config, collector.distrib.opsystem
         )
-        profile = profile_mapping.get(collector.profile)
+        profile = profile_set.by_name.get(collector.profile)
         if not profile:
             _LOGGER.error("unknown profile: %s", collector.profile)
             return None
@@ -67,11 +67,11 @@ class Generaptor:
         certificate = certificate_from_pem_bytes(collector_secrets.crt_pem)
         collector_config = GCollectorConfig(
             device=collector.device,
-            rule_set=get_ruleset_from_targets(
+            rule_set=get_rule_set_from_targets(
                 self.cache,
                 self.config,
-                profile.targets,
                 collector.distrib.opsystem,
+                profile.targets,
             ),
             certificate=certificate,
             distribution=collector.distrib,

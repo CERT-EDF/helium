@@ -72,8 +72,8 @@ export class UtilsService {
 
   toggleDarkMode(): void {
     this.isDarkMode = !this.isDarkMode;
-    if (this.isDarkMode) localStorage.removeItem(DARK);
-    else localStorage.setItem(DARK, '1');
+    if (this.isDarkMode) localStorage.setItem(DARK, '1');
+    else localStorage.removeItem(DARK);
     const element = document.documentElement;
     element.classList.toggle('dark');
   }

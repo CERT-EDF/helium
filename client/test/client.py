@@ -19,6 +19,7 @@ from edf_fusion.client import (
 from edf_fusion.helper.datetime import from_iso
 from edf_fusion.helper.logging import get_logger
 from edf_fusion.helper.serializing import Loadable
+from edf_helium_client import HeliumClient
 from edf_helium_core.concept import (
     Analysis,
     Case,
@@ -27,7 +28,6 @@ from edf_helium_core.concept import (
     Constant,
     Priority,
 )
-from edf_helium_client import HeliumClient
 from generaptor.concept import Architecture, Distribution, OperatingSystem
 
 _LOGGER = get_logger('client', root='test')

@@ -1,33 +1,5 @@
+@use './tailwind.css';
 @use 'primeicons/primeicons.css';
-@plugin 'tailwindcss-primeui';
-@variant dark (&:where(.dark, .dark *));
-
-@layer tailwind, primeng;
-
-@layer tailwind {
-  @import 'tailwindcss';
-}
-
-* {
-  scrollbar-width: thin;
-  scroll-behavior: smooth;
-  overscroll-behavior: none;
-
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #999;
-    border-radius: 20px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #fff;
-    border-radius: 20px;
-  }
-}
 
 html {
   font-size: 15px;
@@ -43,6 +15,8 @@ html {
     'Segoe UI Emoji',
     'Segoe UI Symbol';
   line-height: normal;
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
 }
 
 .theme-text {

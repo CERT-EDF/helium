@@ -30,7 +30,6 @@ from .config import HeliumStorageConfig
 from .helper.generaptor import GCache, GConfig, Generaptor
 
 _LOGGER = get_logger('server.storage', root='helium')
-_CHUNK_SIZE = 64 * 1024
 
 
 def _storage_instances(
@@ -67,7 +66,7 @@ class AnalysisStorage(ConceptStorage):
 
 @dataclass(kw_only=True)
 class CollectionStorage(ConceptStorage):
-    """Case Storage"""
+    """Collection Storage"""
 
     @cached_property
     def analysis_dir(self) -> Path:
@@ -331,7 +330,7 @@ class Storage(FusionStorage):
         collector_storage = self.collector_storage(case_guid, collector_guid)
         metadata = collector_storage.metadata
         if not metadata.is_file():
-            _LOGGER.error("collection metadata not found: %s", metadata)
+            _LOGGER.error("collector metadata not found: %s", metadata)
             return None
         return Collector.from_filepath(metadata)
 

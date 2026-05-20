@@ -19,9 +19,31 @@ export interface CollectorSecret {
   crt_pem: string;
 }
 
-export interface Profile {
+export interface HeliumRule {
+  guid: string;
+  name: string;
+  category: string;
+  glob: string;
+  accessor: string;
+  comment: string;
+  opsystem: string;
+  external: boolean;
+}
+
+export interface HeliumProfile {
+  guid: string;
   name: string;
   targets: string[];
+  opsystem: string;
+  external: boolean;
+}
+
+export interface HeliumTarget {
+  guid: string;
+  name: string;
+  rules: string[]; // Rule GUIDs
+  opsystem: string;
+  external: boolean;
 }
 
 export interface Collection {

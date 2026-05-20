@@ -1,29 +1,45 @@
 """Helium Target"""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
 
 from edf_fusion.concept import Concept
+from generaptor.concept import OperatingSystem
 
 
 @dataclass(kw_only=True)
 class Target(Concept):
     """Helium Target"""
 
+    guid: UUID = field(default_factory=uuid4)
     name: str
-    rule_uids: set[int]
+    rules: set[UUID] = field(default_factory=set)
+    opsystem: OperatingSystem
+    external: bool = False
 
     @classmethod
     def from_dict(cls, dct):
         return cls(
+            guid=UUID(dct['guid']),
             name=dct['name'],
-            rule_uids=set(dct['rule_uids']),
+            rules=set(map(UUID, dct.get('rules', []))),
+            opsystem=OperatingSystem(dct['opsystem']),
+            external=dct['external'],
         )
 
     def to_dict(self):
         return {
+            'guid': str(self.guid),
             'name': self.name,
-            'rule_uids': list(self.rule_uids),
+            'rules': list(map(str, self.rules)),
+            'opsystem': self.opsystem.value,
+            'external': self.external,
         }
 
     def update(self, dct):
-        raise NotImplementedError("Target.update shall not be called!")
+        # guid cannot be updated
+        self.name = dct.get('name', self.name)
+        if 'rules' in dct:
+            self.rules = set(map(UUID, dct.get('rules', [])))
+        self.opsystem = OperatingSystem(dct.get('opsystem', self.opsystem))
+        # external cannot be updated

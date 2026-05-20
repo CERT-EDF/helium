@@ -18,5 +18,5 @@ from .constant import Constant
 from .disk_usage import CaseDiskUsage, DiskUsage
 from .event import Event
 from .profile import Profile
-from .rule import Rule
+from .rule import DEFAULT_ACCESSOR, Rule
 from .target import Target
