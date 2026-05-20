@@ -57,6 +57,12 @@ export class AuthComponent {
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
       if (Object.keys(params).length) {
         if (params['code']) {
+          const storedState = sessionStorage.getItem('oidc_state');
+          if (storedState && params['state'] !== storedState) {
+            this.setErrorMessage('state_mismatch', 'CSRF validation failed, please try again');
+            return;
+          }
+          sessionStorage.removeItem('oidc_state');
           this.login({ code: params['code'] });
         } else if (params['error']) {
           this.setErrorMessage(params['error'], params['error_description']);
@@ -77,13 +83,9 @@ export class AuthComponent {
                   const host = params.host.startsWith('http')
                     ? params.host.replace(/\/$/, '')
                     : `https://${params.host.replace(/\/$/, '')}`;
-                  this.oidcUrl = `${host}${params.include_auth ? '/auth' : ''}/realms/${
-                    params.realm
-                  }/protocol/openid-connect/auth?response_type=code&client_id=${
-                    params.client
-                  }&scope=openid%20profile%20email&state=${Math.random().toString().split('.')[1]}&redirect_uri=${
-                    params.redirect_uri
-                  }`;
+                  const state = Math.random().toString().split('.')[1];
+                  sessionStorage.setItem('oidc_state', state);
+                  this.oidcUrl = `${host}${params.include_auth ? '/auth' : ''}/realms/${params.realm}/protocol/openid-connect/auth?response_type=code&client_id=${params.client}&scope=openid%20profile%20email&state=${state}&redirect_uri=${params.redirect_uri}`;
                 } else {
                   this.setErrorMessage('Error retrieving Keycloak parameters, verify the server configuration');
                 }

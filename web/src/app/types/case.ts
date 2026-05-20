@@ -8,10 +8,12 @@ export interface CaseMetadata {
   description?: string;
   acs: string[];
   managed: boolean;
+}
 
-  quota?: any[]; // injected for quota meter
-  total?: number; // injected for quota meter
-  unseenNew?: boolean; //Injected value in API getCases
+export interface CaseViewModel extends CaseMetadata {
+  unseenNew: boolean;
+  quota?: any[];
+  total?: number;
 }
 
 export interface FusionEvent {

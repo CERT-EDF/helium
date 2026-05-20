@@ -8,7 +8,6 @@ import { TextareaModule } from 'primeng/textarea';
 import { SkeletonModule } from 'primeng/skeleton';
 import { FocusTrapModule } from 'primeng/focustrap';
 import { ApiService } from '../../services/api.service';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Collection, CollectionAnalysis, Collector } from '../../types/collect';
 import { FileSizePipe } from '../../shared/filesize.pipe';
 import { ClipboardModule } from '@angular/cdk/clipboard';
@@ -22,7 +21,7 @@ import { CaseMetadata, FusionEvent } from '../../types/case';
 import { UtilsService } from '../../services/utils.service';
 import { HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
 import { APIResponse, AnalyzerInfo } from '../../types/API';
-import { DatePipe, KeyValuePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { MessageModule } from 'primeng/message';
 import { CollectionEditModalComponent } from '../../modals/collection-edit-modal/collection-edit-modal.component';
 import { CollectorSecretsModalComponent } from '../../modals/collector-secrets-modal/collector-secrets-modal.component';
@@ -42,7 +41,6 @@ import { DeleteConfirmModalComponent } from '../../modals/delete-confirm-modal/d
     InputTextModule,
     ButtonModule,
     SelectModule,
-    ReactiveFormsModule,
     TabsModule,
     TooltipModule,
     FileSizePipe,
@@ -54,7 +52,6 @@ import { DeleteConfirmModalComponent } from '../../modals/delete-confirm-modal/d
     MenuModule,
     DatePipe,
     ButtonModule,
-    KeyValuePipe,
   ],
   templateUrl: './case.component.html',
   styleUrl: './case.component.scss',
@@ -99,7 +96,6 @@ export class CaseComponent implements OnDestroy {
 
   isDragging: boolean = false;
   dragTarget: EventTarget | null = null;
-  caseForm: FormGroup;
   caseMeta: CaseMetadata | undefined;
   caseDiskUsage: { [c: string]: number } = {};
   caseCollectors: Collector[] = [];
@@ -118,17 +114,10 @@ export class CaseComponent implements OnDestroy {
   constructor(
     private apiService: ApiService,
     private cdr: ChangeDetectorRef,
-    private fb: FormBuilder,
     private route: ActivatedRoute,
     private utilsService: UtilsService,
     private dialogService: DialogService,
   ) {
-    this.caseForm = this.fb.group({
-      tsid: '',
-      name: ['', Validators.required],
-      description: '',
-    });
-
     this.apiService
       .getCase(this.route.snapshot.paramMap.get('id')!)
       .pipe(take(1))
@@ -287,6 +276,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(CaseCreateModalComponent, {
       header: 'Update Case',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -295,7 +285,7 @@ export class CaseComponent implements OnDestroy {
       breakpoints: {
         '960px': '90vw',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((data: CaseMetadata | null) => {
       if (!data) return;
@@ -532,6 +522,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(CollectorImportModalComponent, {
       header: 'Import Collector',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -539,7 +530,7 @@ export class CaseComponent implements OnDestroy {
       breakpoints: {
         '960px': '90vw',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((collector: Collector | null) => {
       if (!collector) return;
@@ -551,6 +542,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(CollectorCreateModalComponent, {
       header: 'Create Collector',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -558,7 +550,7 @@ export class CaseComponent implements OnDestroy {
       breakpoints: {
         '960px': '90vw',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((collector: Collector | null) => {
       if (!collector) return;
@@ -591,6 +583,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(YesNoModalComponent, {
       header: 'Upload Collection',
       modal: true,
+      draggable: false,
       closable: true,
       dismissableMask: true,
       breakpoints: {
@@ -600,7 +593,7 @@ export class CaseComponent implements OnDestroy {
         msg: `Confirm with ${file.name} upload ?`,
         warning: file.name.endsWith('.zip') ? '' : 'Helium supports zip and your file extension is mismatching',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe({
       next: (bool) => {
@@ -627,6 +620,7 @@ export class CaseComponent implements OnDestroy {
                 const modal = this.dialogService.open(CollectionEditModalComponent, {
                   header: 'Edit Collection',
                   modal: true,
+                  draggable: false,
                   appendTo: 'body',
                   closable: true,
                   dismissableMask: true,
@@ -638,7 +632,7 @@ export class CaseComponent implements OnDestroy {
                     collection: collection,
                     filename: file.name,
                   },
-                });
+                })!;
 
                 modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
                   if (pCollection)
@@ -663,6 +657,7 @@ export class CaseComponent implements OnDestroy {
           this.dialogService.open(CollectionLogsModalComponent, {
             header: `${analyzerName} logs`,
             modal: true,
+            draggable: false,
             appendTo: 'body',
             closable: true,
             dismissableMask: true,
@@ -680,6 +675,7 @@ export class CaseComponent implements OnDestroy {
     this.dialogService.open(CollectorSecretsModalComponent, {
       header: 'Collector Secrets',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -699,6 +695,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(CollectionEditModalComponent, {
       header: 'Edit Collection',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -710,7 +707,7 @@ export class CaseComponent implements OnDestroy {
         collection: collection,
         filename: '',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((pCollection: Collection | null) => {
       if (pCollection) this.apiService.putCaseCollection(this.caseMeta!.guid, pCollection).pipe(take(1)).subscribe();
@@ -721,6 +718,7 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(YesNoModalComponent, {
       header: 'Remove cache',
       modal: true,
+      draggable: false,
       closable: true,
       dismissableMask: true,
       breakpoints: {
@@ -730,7 +728,7 @@ export class CaseComponent implements OnDestroy {
         msg: 'You are about to remove cache to free space, including decrypted collections',
         warning: 'Analyzers will need to decrypt collection again',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe({
       next: (bool) => {
@@ -755,6 +753,24 @@ export class CaseComponent implements OnDestroy {
       });
   }
 
+  downloadCollectorConfig(collector: Collector): void {
+    this.apiService
+      .getCaseCollectorConfig(this.caseMeta!.guid, collector.guid)
+      .pipe(take(1))
+      .subscribe({
+        next: (config) => {
+          const blob = new Blob([config], { type: 'text/yaml' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${collector.fingerprint}_config.yml`;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => this.utilsService.toast('error', 'Error', 'Collector config not available'),
+      });
+  }
+
   downloadCollection(collectionGuid: string): void {
     this.apiService
       .downloadCollection(this.caseMeta!.guid, collectionGuid)
@@ -765,14 +781,7 @@ export class CaseComponent implements OnDestroy {
   }
 
   deleteAnalysis(guid: string, analyzerName: string) {
-    this.apiService
-      .deleteCollectionAnalysis(this.caseMeta!.guid, guid, analyzerName)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.apiService.getCollectionAnalyses(this.caseMeta!.guid, guid).pipe(take(1)).subscribe();
-        },
-      });
+    this.apiService.deleteCollectionAnalysis(this.caseMeta!.guid, guid, analyzerName).pipe(take(1)).subscribe();
   }
 
   deleteCase() {
@@ -780,13 +789,14 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
+      draggable: false,
       closable: true,
       dismissableMask: true,
       breakpoints: {
         '640px': '90vw',
       },
       data: this.caseMeta?.name,
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
       if (!confirmed) return;
@@ -798,12 +808,13 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
+      draggable: false,
       closable: true,
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
       data: collector.fingerprint || collector.guid,
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
       if (!confirmed) return;
@@ -815,12 +826,13 @@ export class CaseComponent implements OnDestroy {
     const modal = this.dialogService.open(DeleteConfirmModalComponent, {
       header: 'Confirm to delete',
       modal: true,
+      draggable: false,
       closable: true,
       focusOnShow: false,
       dismissableMask: true,
       breakpoints: { '640px': '90vw' },
       data: collection.hostname || collection.guid,
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((confirmed: boolean) => {
       if (!confirmed) return;

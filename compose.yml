@@ -42,7 +42,7 @@ services:
       COLUMNS: ${COLUMNS:-120}
       FUSION_DEBUG: ${FUSION_DEBUG:-0}
 
-  helium-disk-usage:
+  helium-housekeeper:
     build:
       context: ./server/docker
       no_cache: true
@@ -56,7 +56,7 @@ services:
     depends_on:
       - helium-redis
     environment:
-      ROLE: disk-usage
+      ROLE: housekeeper
       COLUMNS: ${COLUMNS:-120}
       FUSION_DEBUG: ${FUSION_DEBUG:-0}
 

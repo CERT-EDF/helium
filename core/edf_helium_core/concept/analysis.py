@@ -15,7 +15,7 @@ from edf_fusion.helper.datetime import (
 
 _STATUS_TRANSITIONS: dict[Status, set[Status]] = {
     Status.PENDING: {Status.QUEUED},
-    Status.QUEUED: {Status.EXTRACTING, Status.PENDING},
+    Status.QUEUED: {Status.EXTRACTING, Status.PENDING, Status.FAILURE},
     Status.EXTRACTING: {Status.PROCESSING, Status.FAILURE, Status.PENDING},
     Status.PROCESSING: {Status.SUCCESS, Status.FAILURE, Status.PENDING},
     Status.SUCCESS: {Status.PENDING},

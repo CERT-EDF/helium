@@ -59,20 +59,30 @@ async def find_pending_analyses(
 
 
 async def perform_analyses_recovery(storage: Storage, analyzer: str) -> int:
-    """Perform analysis recovery when service was stopped while ananyzing"""
+    """Perform analysis recovery when service was stopped while analyzing"""
     recovered = 0
-    async for case, collection, analysis in find_analyses(storage, analyzer):
-        if analysis.completed:
-            continue
-        if analysis.status == Status.PENDING:
-            continue
-        await storage.update_analysis(
-            case.guid,
-            collection.guid,
-            analysis.analyzer,
-            {'status': Status.PENDING.value},
-        )
-        recovered += 1
+    async for case in storage.enumerate_cases():
+        async for collection in storage.enumerate_collections(case.guid):
+            a_storage = storage.analysis_storage(
+                case.guid, collection.guid, analyzer
+            )
+            if not a_storage.metadata.is_file():
+                continue
+            analysis = await storage.retrieve_analysis(
+                case.guid, collection.guid, analyzer
+            )
+            if analysis.completed:
+                continue
+            if analysis.status == Status.PENDING:
+                continue
+            target_status = Status.FAILURE if case.closed else Status.PENDING
+            await storage.update_analysis(
+                case.guid,
+                collection.guid,
+                analysis.analyzer,
+                {'status': target_status.value},
+            )
+            recovered += 1
     return recovered
 
 

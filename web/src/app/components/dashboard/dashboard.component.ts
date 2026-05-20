@@ -7,16 +7,20 @@ import { MenuModule } from 'primeng/menu';
 import { ApiService } from '../../services/api.service';
 import { DialogService } from 'primeng/dynamicdialog';
 import { CaseCreateModalComponent } from '../../modals/case-create-modal/case-create-modal.component';
-import { CaseMetadata } from '../../types/case';
+import { CaseMetadata, CaseViewModel } from '../../types/case';
 import { MenuItem } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
 import { UtilsService } from '../../services/utils.service';
 import { DialogModule } from 'primeng/dialog';
-import { debounceTime, Observable, take } from 'rxjs';
+import { debounceTime, Observable, switchMap, take } from 'rxjs';
 import { Info } from '../../types/API';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { DiskUsageModalComponent } from '../../modals/disk-usage-modal/disk-usage-modal.component';
+import {
+  CollectorTemplateModalComponent,
+  CollectorTemplateResult,
+} from '../../modals/collector-template-modal/collector-template-modal';
 import { FileSizePipe } from '../../shared/filesize.pipe';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -64,8 +68,8 @@ export class DashboardComponent {
   info$: Observable<Info>;
   isAboutDialogVisible: boolean = false;
   frontendVersion: string;
-  cases: CaseMetadata[] = [];
-  displayedCases: CaseMetadata[] = [];
+  cases: CaseViewModel[] = [];
+  displayedCases: CaseViewModel[] = [];
   searchInput = new FormControl('');
   emptyMeterGroup = [
     { label: 'Collectors', color: '#34d399', value: 0 },
@@ -83,47 +87,30 @@ export class DashboardComponent {
 
     this.apiService
       .getCases()
-      .pipe(take(1))
-      .subscribe({
-        next: (cases) => {
-          this.cases = cases.map((c) => {
-            return { ...c, total: 0, quota: this.emptyMeterGroup };
-          });
+      .pipe(
+        take(1),
+        switchMap((cases) => {
+          this.cases = cases.map((c) => ({ ...c, total: 0, quota: this.emptyMeterGroup }));
           this.cases.sort((a, b) => new Date(b.created as string).getTime() - new Date(a.created as string).getTime());
           this.updateDisplayedCases(this.cases);
-
-          this.apiService
-            .getDiskUsage()
-            .pipe(take(1))
-            .subscribe({
-              next: (diskUsage) => {
-                diskUsage.cases.forEach((c) => {
-                  const total = c.analyses + c.collections + c.collectors;
-                  const index = this.cases.findIndex((_c) => _c.guid == c.guid);
-                  if (index > -1) {
-                    this.cases[index].total = total;
-                    this.cases[index].quota = [
-                      {
-                        label: 'Collectors',
-                        color: '#34d399',
-                        value: (c.collectors * 100) / total,
-                      },
-                      {
-                        label: 'Collections',
-                        color: '#0263b1',
-                        value: (c.collections * 100) / total,
-                      },
-                      {
-                        label: 'Analyses',
-                        color: '#c084fc',
-                        value: (c.analyses * 100) / total,
-                      },
-                    ];
-                  }
-                });
-                this.updateDisplayedCases(this.cases);
-              },
-            });
+          return this.apiService.getDiskUsage().pipe(take(1));
+        }),
+      )
+      .subscribe({
+        next: (diskUsage) => {
+          diskUsage.cases.forEach((c) => {
+            const total = c.analyses + c.collections + c.collectors;
+            const index = this.cases.findIndex((_c) => _c.guid == c.guid);
+            if (index > -1) {
+              this.cases[index].total = total;
+              this.cases[index].quota = [
+                { label: 'Collectors', color: '#34d399', value: (c.collectors * 100) / total },
+                { label: 'Collections', color: '#0263b1', value: (c.collections * 100) / total },
+                { label: 'Analyses', color: '#c084fc', value: (c.analyses * 100) / total },
+              ];
+            }
+          });
+          this.updateDisplayedCases(this.cases);
         },
       });
 
@@ -138,6 +125,7 @@ export class DashboardComponent {
     const modal = this.dialogService.open(CaseCreateModalComponent, {
       header: 'Create Case',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -145,7 +133,7 @@ export class DashboardComponent {
       breakpoints: {
         '960px': '90vw',
       },
-    });
+    })!;
 
     modal.onClose.pipe(take(1)).subscribe((data: CaseMetadata | null) => {
       if (data)
@@ -154,10 +142,29 @@ export class DashboardComponent {
           .pipe(take(1))
           .subscribe({
             next: (resp) => {
-              this.cases = [...this.cases, { ...resp, total: 0, quota: this.emptyMeterGroup }];
+              const vm: CaseViewModel = { ...resp, unseenNew: false, total: 0, quota: this.emptyMeterGroup };
+              this.cases = [...this.cases, vm];
               this.updateDisplayedCases(this.cases);
             },
           });
+    });
+  }
+
+  openCollectorBinariesModal() {
+    const modal = this.dialogService.open(CollectorTemplateModalComponent, {
+      header: 'Download Collector Binary',
+      modal: true,
+      draggable: false,
+      appendTo: 'body',
+      closable: true,
+      dismissableMask: true,
+      width: '30vw',
+      breakpoints: { '960px': '90vw' },
+    })!;
+
+    modal.onClose.pipe(take(1)).subscribe((result: CollectorTemplateResult | null) => {
+      if (!result) return;
+      this.apiService.downloadCollectorTemplate(result.opsystem, result.arch).pipe(take(1)).subscribe();
     });
   }
 
@@ -165,6 +172,7 @@ export class DashboardComponent {
     this.dialogService.open(DiskUsageModalComponent, {
       header: 'Disk Usage',
       modal: true,
+      draggable: false,
       appendTo: 'body',
       closable: true,
       dismissableMask: true,
@@ -180,10 +188,10 @@ export class DashboardComponent {
     this.apiService.logout().pipe(take(1)).subscribe();
   }
 
-  updateDisplayedCases(cases: CaseMetadata[], inputVal?: string): void {
+  updateDisplayedCases(cases: CaseViewModel[], inputVal?: string): void {
     if (inputVal) {
       this.displayedCases = cases.filter(
-        (c: CaseMetadata) =>
+        (c: CaseViewModel) =>
           c.name.toLowerCase().includes(inputVal.toLowerCase()) ||
           c.description?.toLowerCase().includes(inputVal.toLowerCase()) ||
           c.tsid?.toString().includes(inputVal),

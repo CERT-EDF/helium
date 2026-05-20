@@ -20,8 +20,8 @@ case "${ROLE}" in
     server)
         exec /venv/bin/helium-server --config /conf/helium.yml
         ;;
-    disk-usage)
-        exec /venv/bin/helium-disk-usage --config /conf/helium.yml
+    housekeeper)
+        exec /venv/bin/helium-housekeeper --config /conf/helium.yml
         ;;
     synchronizer)
         exec /venv/bin/helium-synchronizer --config /conf/helium.yml

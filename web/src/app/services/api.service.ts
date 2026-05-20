@@ -1,17 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  distinctUntilChanged,
-  map,
-  of,
-  shareReplay,
-  tap,
-  retry,
-  throwError,
-  timer,
-} from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, retry, throwError, timer } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { UtilsService } from './utils.service';
 import { AuthParams } from '../types/OIDC';
@@ -26,8 +14,16 @@ import {
   User,
 } from '../types/API';
 import { Router } from '@angular/router';
-import { CaseMetadata } from '../types/case';
-import { Collection, CollectionAnalysis, Collector, CollectorSecret, Profile } from '../types/collect';
+import { CaseMetadata, CaseViewModel } from '../types/case';
+import {
+  Collection,
+  CollectionAnalysis,
+  Collector,
+  CollectorSecret,
+  HeliumProfile,
+  HeliumRule,
+  HeliumTarget,
+} from '../types/collect';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -97,8 +93,6 @@ export class ApiService {
         if (resp.data?.username) this._userSubject$.next(resp.data.username);
       }),
       map(() => true),
-      distinctUntilChanged(),
-      shareReplay({ bufferSize: 1, refCount: true }),
     );
   }
 
@@ -109,33 +103,29 @@ export class ApiService {
         const groups = Array.from(new Set(resp.data.flatMap((u) => u.groups)));
         return { users, groups };
       }),
-      distinctUntilChanged(),
-      shareReplay({ bufferSize: 1, refCount: true }),
     );
   }
 
   getCase(caseGuid: string): Observable<CaseMetadata> {
-    return this.http.get<APIResponse<CaseMetadata>>(`${this.apiBaseUrl}/case/${caseGuid}`).pipe(
-      map((resp) => resp.data),
-      distinctUntilChanged(),
-      shareReplay({ bufferSize: 1, refCount: true }),
-    );
+    return this.http
+      .get<APIResponse<CaseMetadata>>(`${this.apiBaseUrl}/case/${caseGuid}`)
+      .pipe(map((resp) => resp.data));
   }
 
-  getCases(): Observable<CaseMetadata[]> {
+  getCases(): Observable<CaseViewModel[]> {
     return this.http.get<APIResponse<CaseMetadata[]>>(`${this.apiBaseUrl}/cases`).pipe(
       map((resp) => {
         const previous = this.utils.getStoredCaseGuids();
-        return resp.data.map((c: CaseMetadata) => ({
-          ...c,
-          unseenNew: previous.includes(c.guid) ? false : true,
-        }));
+        return resp.data.map(
+          (c: CaseMetadata): CaseViewModel => ({
+            ...c,
+            unseenNew: !previous.includes(c.guid),
+          }),
+        );
       }),
       tap((resp) => {
         this.utils.refreshStoredCases(resp);
       }),
-      distinctUntilChanged(),
-      shareReplay({ bufferSize: 1, refCount: true }),
     );
   }
 
@@ -175,10 +165,9 @@ export class ApiService {
   }
 
   getCaseCollectorConfig(caseGuid: string, collectorGuid: string): Observable<string> {
-    return this.http.get<string>(
-      `${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/config`,
-      { responseType: 'text' as 'json' },
-    );
+    return this.http.get<string>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/config`, {
+      responseType: 'text' as 'json',
+    });
   }
 
   getCaseCollectorSecrets(caseGuid: string, collectorGuid: string): Observable<CollectorSecret> {
@@ -187,23 +176,25 @@ export class ApiService {
       .pipe(map((c) => c.data));
   }
 
-  downloadCollector(caseGuid: string, collectorGuid: string): Observable<any> {
+  downloadCollector(caseGuid: string, collectorGuid: string): Observable<void> {
     return this.http
       .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/case/${caseGuid}/collector/${collectorGuid}/download`)
       .pipe(
-        map((resp) => {
+        tap((resp) => {
           window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
         }),
+        map(() => undefined),
       );
   }
 
-  downloadCollectorTemplate(opSystem: string, arch: string): Observable<any> {
+  downloadCollectorTemplate(opSystem: string, arch: string): Observable<void> {
     return this.http
       .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/config/collector/${opSystem}/${arch}/download`)
       .pipe(
-        map((resp) => {
+        tap((resp) => {
           window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
         }),
+        map(() => undefined),
       );
   }
 
@@ -253,12 +244,6 @@ export class ApiService {
     return this.http.get<APIResponse<AnalyzerInfo[]>>(`${this.apiBaseUrl}/config/analyzers`).pipe(map((c) => c.data));
   }
 
-  getOpsystemProfiles(opSystem: string): Observable<Profile[]> {
-    return this.http
-      .get<APIResponse<Profile[]>>(`${this.apiBaseUrl}/config/${opSystem}/profiles`)
-      .pipe(map((c) => c.data));
-  }
-
   postCollectionAnalysis(
     caseGuid: string,
     collectionGuid: string,
@@ -290,13 +275,14 @@ export class ApiService {
     );
   }
 
-  downloadCollection(caseGuid: string, collectionGuid: string): Observable<any> {
+  downloadCollection(caseGuid: string, collectionGuid: string): Observable<void> {
     return this.http
-      .get<APIResponse<any>>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/download`)
+      .get<APIResponse<PendingDownloadKey>>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/download`)
       .pipe(
-        map((resp) => {
+        tap((resp) => {
           window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
         }),
+        map(() => undefined),
       );
   }
 
@@ -304,15 +290,16 @@ export class ApiService {
     return this.http.delete<APIResponse<any>>(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/cache`);
   }
 
-  downloadCollectionAnalysis(caseGuid: string, collectionGuid: string, analyzerName: string): Observable<any> {
+  downloadCollectionAnalysis(caseGuid: string, collectionGuid: string, analyzerName: string): Observable<void> {
     return this.http
       .get<
-        APIResponse<any>
+        APIResponse<PendingDownloadKey>
       >(`${this.apiBaseUrl}/case/${caseGuid}/collection/${collectionGuid}/analysis/${analyzerName}/download`)
       .pipe(
-        map((resp) => {
+        tap((resp) => {
           window.open(`${this.apiBaseUrl}/download/${resp.data.guid}/${resp.data.token}`, '_blank');
         }),
+        map(() => undefined),
       );
   }
 
@@ -321,7 +308,6 @@ export class ApiService {
       const eventSource = new EventSource(`${this.apiBaseUrl}/events/case/${guid}`);
       eventSource.onmessage = (event: MessageEvent) => obs.next(event);
       eventSource.onerror = (error) => {
-        this.utils.toast('error', 'EventSource disconnected', 'EventSource disconnected, reconnecting...');
         obs.error(error);
         eventSource.close();
       };
@@ -339,6 +325,68 @@ export class ApiService {
         return throwError(() => error);
       }),
     );
+  }
+
+  getHeliumProfiles(opsystem: string): Observable<HeliumProfile[]> {
+    return this.http
+      .get<APIResponse<HeliumProfile[]>>(`${this.apiBaseUrl}/ptr/${opsystem}/profiles`)
+      .pipe(map((c) => c.data));
+  }
+
+  postHeliumProfile(opsystem: string, profile: Partial<HeliumProfile>): Observable<HeliumProfile> {
+    return this.http
+      .post<APIResponse<HeliumProfile>>(`${this.apiBaseUrl}/ptr/${opsystem}/profile`, profile)
+      .pipe(map((c) => c.data));
+  }
+
+  putHeliumProfile(opsystem: string, guid: string, profile: Partial<HeliumProfile>): Observable<HeliumProfile> {
+    return this.http
+      .put<APIResponse<HeliumProfile>>(`${this.apiBaseUrl}/ptr/${opsystem}/profile/${guid}`, profile)
+      .pipe(map((c) => c.data));
+  }
+
+  deleteHeliumProfile(opsystem: string, guid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/ptr/${opsystem}/profile/${guid}`);
+  }
+
+  getHeliumTargets(opsystem: string): Observable<HeliumTarget[]> {
+    return this.http
+      .get<APIResponse<HeliumTarget[]>>(`${this.apiBaseUrl}/ptr/${opsystem}/targets`)
+      .pipe(map((c) => c.data));
+  }
+
+  postHeliumTarget(opsystem: string, target: Partial<HeliumTarget>): Observable<HeliumTarget> {
+    return this.http
+      .post<APIResponse<HeliumTarget>>(`${this.apiBaseUrl}/ptr/${opsystem}/target`, target)
+      .pipe(map((c) => c.data));
+  }
+
+  putHeliumTarget(opsystem: string, guid: string, target: Partial<HeliumTarget>): Observable<HeliumTarget> {
+    return this.http
+      .put<APIResponse<HeliumTarget>>(`${this.apiBaseUrl}/ptr/${opsystem}/target/${guid}`, target)
+      .pipe(map((c) => c.data));
+  }
+
+  deleteHeliumTarget(opsystem: string, guid: string): Observable<any> {
+    return this.http.delete<any>(`${this.apiBaseUrl}/ptr/${opsystem}/target/${guid}`);
+  }
+
+  getHeliumRules(opsystem: string): Observable<HeliumRule[]> {
+    return this.http
+      .get<APIResponse<HeliumRule[]>>(`${this.apiBaseUrl}/ptr/${opsystem}/rules`)
+      .pipe(map((c) => c.data));
+  }
+
+  postHeliumRule(opsystem: string, rule: Partial<HeliumRule>): Observable<HeliumRule> {
+    return this.http
+      .post<APIResponse<HeliumRule>>(`${this.apiBaseUrl}/ptr/${opsystem}/rule`, rule)
+      .pipe(map((c) => c.data));
+  }
+
+  putHeliumRule(opsystem: string, guid: string, rule: Partial<HeliumRule>): Observable<HeliumRule> {
+    return this.http
+      .put<APIResponse<HeliumRule>>(`${this.apiBaseUrl}/ptr/${opsystem}/rule/${guid}`, rule)
+      .pipe(map((c) => c.data));
   }
 
   getDiskUsage(): Observable<APIDiskUsage> {

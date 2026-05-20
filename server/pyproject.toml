@@ -32,7 +32,7 @@ dependencies = [
 
 [project.scripts]
 helium-server = "edf_helium_server.main:app"
-helium-disk-usage = "edf_helium_server.disk_usage:app"
+helium-housekeeper = "edf_helium_server.housekeeper:app"
 helium-synchronizer = "edf_helium_server.synchronizer:app"
 
 

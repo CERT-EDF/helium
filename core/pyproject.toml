@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "edf-fusion~=3.0",
-    "generaptor~=15.4",
+    "generaptor~=16.0",
 ]
 
 
