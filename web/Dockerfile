@@ -10,7 +10,6 @@ ARG GIT_TAG
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
-RUN echo 'yo'
 COPY . .
 RUN echo "export const version: string = '${GIT_TAG}';" > /app/public/version.ts
 RUN npm run build
