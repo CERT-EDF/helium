@@ -162,6 +162,7 @@ async def load_external_ptr(
             _LOGGER.info("skipped loading external ptr data")
             return
         directory = storage.generaptor.cache.config.directory
+        await ptr_storage.delete_external_ptr(opsystem)
         await _load_external_rules(ptr_storage, opsystem, directory)
         await _load_external_targets(ptr_storage, opsystem, directory)
         await _load_external_profiles(ptr_storage, opsystem, directory)
