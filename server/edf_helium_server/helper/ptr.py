@@ -132,22 +132,23 @@ def _need_external_ptr_update(
 ) -> bool:
     """Determine if external data changed"""
     ptr_state_path = storage.cache_dir / f'ptr_state_{opsystem.value}.json'
+    directory = storage.generaptor.cache.config.directory / opsystem.value
+    if not directory.is_dir():
+        _LOGGER.warning("cache config directory is missing: %s", directory)
+        return False
     if not ptr_state_path.is_file():
         _LOGGER.info("ptr state file is missing")
         return True
     ptr_state_prev = PTRState.from_filepath(ptr_state_path)
-    ptr_state_next = PTRState.from_directory(
-        storage.generaptor.cache.config.directory / opsystem.value
-    )
+    ptr_state_next = PTRState.from_directory(directory)
     return ptr_state_next != ptr_state_prev
 
 
 def _update_external_ptr_state(storage: Storage, opsystem: OperatingSystem):
     """Update ptr state"""
     ptr_state_path = storage.cache_dir / f'ptr_state_{opsystem.value}.json'
-    ptr_state_next = PTRState.from_directory(
-        storage.generaptor.cache.config.directory / opsystem.value
-    )
+    directory = storage.generaptor.cache.config.directory / opsystem.value
+    ptr_state_next = PTRState.from_directory(directory)
     ptr_state_next.to_filepath(ptr_state_path)
 
 
